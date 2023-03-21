@@ -3,8 +3,10 @@ name = "my_first_package"
 version = "0.0.1"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "devnet" }
+# Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "devnet" }
+# Sui = { git = "https://gitclone.com/github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "devnet" }
+Sui = { local = "../../Sui/crates/sui-framework" }
 
 [addresses]
-my_first_package =  "0x0"
+my_first_package =  "0xdd"
 sui =  "0000000000000000000000000000000000000002"
