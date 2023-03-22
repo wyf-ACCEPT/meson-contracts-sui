@@ -1,3 +1,5 @@
 node_modules
-wallet-dev
+wallet-*
 build
+sui.log.*
+sui-framework-link
