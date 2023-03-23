@@ -3,3 +3,4 @@ wallet-*
 build
 sui.log.*
 sui-framework-link
+sui-example-link
