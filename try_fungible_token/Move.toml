@@ -1,5 +1,5 @@
 [package]
-name = "my_first_package"
+name = "try_fungible_token"
 version = "0.0.1"
 
 [dependencies]
