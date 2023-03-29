@@ -10,20 +10,20 @@ const provider = new JsonRpcProvider(devnetConnection);
     const myAddress = myKeypair.getPublicKey().toSuiAddress()       // 0xe61fe099d95b8d90b65c63d649ed96c56131d6db48df058e9dbd6e06722312fd
     console.log(mySigner)
 
-    // // Request from faucet 
-    // const requestNum = 500_000_000      // 500 USDC
-    // const txnRequestUSDC = new TransactionBlock()
-    // txnRequestUSDC.moveCall({
-    //     target: '0xa2d36504375b900bacb2a20af88bfc7b4337e42d8604019d3db20f9df2903ce::usdc::get_some',
-    //     arguments: [
-    //         txnRequestUSDC.object('0x447dc03fd7eba4db5759d00aafc88b14ee533cd79261cf43612509761505b5a7'),
-    //         // The USDC-faucet object ID (it's a shared object, not belong to anyone)
-    //         txnRequestUSDC.pure(requestNum),
-    //     ],
-    // })
-    // const result1 = await mySigner.signAndExecuteTransactionBlock({ transactionBlock: txnRequestUSDC })
-    // console.log(result1)
-    // console.log('========== Request succeed! ==========\n')
+    // Request from faucet 
+    const requestNum = 500_000_000      // 500 USDC
+    const txnRequestUSDC = new TransactionBlock()
+    txnRequestUSDC.moveCall({
+        target: '0xa2d36504375b900bacb2a20af88bfc7b4337e42d8604019d3db20f9df2903ce::usdc::get_some',
+        arguments: [
+            txnRequestUSDC.object('0x447dc03fd7eba4db5759d00aafc88b14ee533cd79261cf43612509761505b5a7'),
+            // The USDC-faucet object ID (it's a shared object, not belong to anyone)
+            txnRequestUSDC.pure(requestNum),
+        ],
+    })
+    const result1 = await mySigner.signAndExecuteTransactionBlock({ transactionBlock: txnRequestUSDC })
+    console.log(result1)
+    console.log('========== Request succeed! ==========\n')
 
     // Show the information of all USDC objects that the address owns
     const usdcObjects = (await provider.getAllCoins({
