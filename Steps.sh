@@ -15,9 +15,12 @@ curl --location --request POST 'https://faucet.devnet.sui.io/gas' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "FixedAmountRequest": {
-        "recipient": "0x29e30b919b77fbc03fa3220c91acfbf95cf3c24e817eddd0685d45a443bceb9f"
+        "recipient": "0x702808ed57102c64fae4c009636adea8ff929b1be83d425cf41c7b3589adf6fa"
     }
 }'
 
 # 3.2 Publish a module
 sui client publish --gas-budget 1000    # or `sui console` to enter interactive shell
+
+# 4 Transfer
+transfer --to 0x20c179226989dd34c7bb5918ce66e4c98e41ddd8b2d0f9427e00ec7542c719cf --gas-budget 9999 --object-id 0x20c179226989dd34c7bb5918ce66e4c98e41ddd8b2d0f9427e00ec7542c719cf
