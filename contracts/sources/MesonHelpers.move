@@ -4,6 +4,7 @@ module Meson::MesonHelpers {
     use sui::bcs;
     use sui::ecdsa_k1;
     use sui::hash;
+    use std::debug;
 
 //     friend Meson::MesonStates;
 //     friend Meson::MesonSwap;
@@ -219,7 +220,7 @@ module Meson::MesonHelpers {
         };
         // let digest = hash::keccak256(&signing_data);
 
-        let recovered = recover_eth_address(&signing_data, &signature);
+        let recovered = recover_eth_address(signing_data, signature);
         assert!(recovered == signer_eth_addr, EINVALID_SIGNATURE);
     }
 
@@ -254,7 +255,7 @@ module Meson::MesonHelpers {
         };
         // let digest = hash::keccak256(&signing_data);
 
-        let recovered = recover_eth_address(&signing_data, &signature);
+        let recovered = recover_eth_address(signing_data, signature);
         assert!(recovered == signer_eth_addr, EINVALID_SIGNATURE);
     }
         
@@ -289,8 +290,16 @@ module Meson::MesonHelpers {
     }
 
     // Notice: the input param must be the origin message, not digest.
-    public fun recover_eth_address(msg: &vector<u8>, signature: &vector<u8>): vector<u8> {
-        let pk = ecdsa_k1::secp256k1_ecrecover(signature, msg, 0);    // 0 means `keccak256`
+    public fun recover_eth_address(msg: vector<u8>, signature: vector<u8>): vector<u8> {
+        let signature_65bytes = copy signature;
+        let first_bit_of_s = vector::borrow_mut(&mut signature_65bytes, 32);
+        let recovery_id = *first_bit_of_s >> 7;
+        *first_bit_of_s = *first_bit_of_s & 0x7f;
+        vector::push_back(&mut signature_65bytes, recovery_id);
+
+        let compressed_pk = ecdsa_k1::secp256k1_ecrecover(&signature_65bytes, &msg, 0);     // 0 means `keccak256`
+        let pk = ecdsa_k1::decompress_pubkey(&compressed_pk);
+        vector::remove(&mut pk, 0);           // Notice: drop '04' prefix
         eth_address_from_pubkey(pk)
     }
 
@@ -341,13 +350,13 @@ module Meson::MesonHelpers {
     
     #[test]
     fun test_recover_eth_address() {
-        let signing_data = x"ea83cdcdd06bf61e414054115a551e23133711d0507dcbc07a4bab7dc4581935";
-        let signature = x"2bd03a0d8edfcbe82e56ffede5a94f49635c802364630bc3bc9b17ba85baadfab8b733437f0ad897aa246d011122570c6c9943ead86252d4f16952495380a31e";
+        let message = b"stupid";
+        let signature = x"6fd862958c41d532022e404a809e92ec699bd0739f8d782ca752b07ff978f341f43065a96dc53a21b4eb4ce96a84a7c4103e3485b0c87d868df545fcce0f3983";
         let eth_addr = recover_eth_address(
-            &signing_data,
-            &signature
+            message,
+            signature
         );
-        assert!(eth_addr == x"052c7707093534035fc2ed60de35e11bebb6486b", 1);
+        assert!(eth_addr == x"2eF8a51F8fF129DBb874A0efB021702F59C1b211", 1);
     }
 
 }
