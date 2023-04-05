@@ -8,17 +8,22 @@ const provider = new JsonRpcProvider(devnetConnection);
     const myKeypair = Secp256k1Keypair.deriveKeypair(mnemonic)
     const mySigner = new RawSigner(myKeypair, provider)
     const myAddress = myKeypair.getPublicKey().toSuiAddress()       // 0xe61fe099d95b8d90b65c63d649ed96c56131d6db48df058e9dbd6e06722312fd
-    console.log(mySigner)
+    console.log(myAddress)
 
     // Request from faucet 
     const requestNum = 500_000_000      // 500 USDC
+    const module_name = '0xf5b8c6f59fd837f3a1f492e4aca23d98b297c32f899838c77c75047d5a20ef97::usdc'
     const txnRequestUSDC = new TransactionBlock()
     txnRequestUSDC.moveCall({
-        target: '0xa2d36504375b900bacb2a20af88bfc7b4337e42d8604019d3db20f9df2903ce::usdc::get_some',
+        target: `${module_name}::release`,
         arguments: [
-            txnRequestUSDC.object('0x447dc03fd7eba4db5759d00aafc88b14ee533cd79261cf43612509761505b5a7'),
+            txnRequestUSDC.pure('0x01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21'),
+            txnRequestUSDC.pure('0xdead'),  // signature
+            txnRequestUSDC.pure('0xcafe'),  // initiator
+            txnRequestUSDC.object('0x4e8c2e80791a847e823c5162a9b1afa37fc0c3ec45d346881fd0c38595d87bb2'),
             // The USDC-faucet object ID (it's a shared object, not belong to anyone)
-            txnRequestUSDC.pure(requestNum),
+            txnRequestUSDC.object('0x17bc086075749d65db1b108f0fc65efcb68e032494a4b42ea2e09e63dd6aad72'),
+            // The `encoded` recording object ID (it's also a shared object)
         ],
     })
     const result1 = await mySigner.signAndExecuteTransactionBlock({ transactionBlock: txnRequestUSDC })
@@ -28,7 +33,7 @@ const provider = new JsonRpcProvider(devnetConnection);
     // Show the information of all USDC objects that the address owns
     const usdcObjects = (await provider.getAllCoins({
         owner: myAddress
-    })).data.filter(x => x.coinType == '0xa2d36504375b900bacb2a20af88bfc7b4337e42d8604019d3db20f9df2903ce::usdc::USDC')
+    })).data.filter(x => x.coinType == `${module_name}::USDC`)
     for (var element of usdcObjects) console.log((await provider.getObject({ id: element.coinObjectId })).data)
     console.log('========== USDC Object listed above. ==========\n')
 
@@ -38,7 +43,7 @@ const provider = new JsonRpcProvider(devnetConnection);
     const destAddress = '0x442c1e065aeca62d4f6b6a430d06048b7fd1616855c8176a0ce156996866a111'
     const txnTransferUSDC = new TransactionBlock()
     txnTransferUSDC.moveCall({
-        target: '0xa2d36504375b900bacb2a20af88bfc7b4337e42d8604019d3db20f9df2903ce::usdc::transfer_usdc',
+        target: `${module_name}::transfer_usdc`,
         arguments: [
             txnTransferUSDC.object(usdcObjectUsed),
             txnTransferUSDC.pure(destAddress),
@@ -48,6 +53,5 @@ const provider = new JsonRpcProvider(devnetConnection);
     const result2 = await mySigner.signAndExecuteTransactionBlock({ transactionBlock: txnTransferUSDC })
     console.log(result2)
     console.log('========== Transfer succeed! ==========\n')
-
 
 })()

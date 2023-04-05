@@ -4,7 +4,6 @@ module Meson::MesonHelpers {
     use sui::bcs;
     use sui::ecdsa_k1;
     use sui::hash;
-    use std::debug;
 
 //     friend Meson::MesonStates;
 //     friend Meson::MesonSwap;
