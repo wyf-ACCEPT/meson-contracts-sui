@@ -5,7 +5,7 @@ module Meson::MesonHelpers {
     use sui::ecdsa_k1;
     use sui::hash;
 
-//     friend Meson::MesonStates;
+    friend Meson::MesonStates;
 //     friend Meson::MesonSwap;
 //     friend Meson::MesonPools;
 
