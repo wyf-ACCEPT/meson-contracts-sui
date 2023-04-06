@@ -17,15 +17,16 @@ const provider = new JsonRpcProvider(devnetConnection);
     txnRequestUSDC.moveCall({
         target: `${module_name}::release`,
         arguments: [
-            txnRequestUSDC.pure('0x01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21'),
-            txnRequestUSDC.pure('0xdead'),  // signature
-            txnRequestUSDC.pure('0xcafe'),  // initiator
+            txnRequestUSDC.pure('0x01001dcd6500c00000000000f677815c000000000010634dcb98027d0102ca21'),
+            txnRequestUSDC.pure('0x00'),  // signature
+            txnRequestUSDC.pure('0x00'),  // initiator
             txnRequestUSDC.object('0x4e8c2e80791a847e823c5162a9b1afa37fc0c3ec45d346881fd0c38595d87bb2'),
             // The USDC-faucet object ID (it's a shared object, not belong to anyone)
             txnRequestUSDC.object('0x17bc086075749d65db1b108f0fc65efcb68e032494a4b42ea2e09e63dd6aad72'),
             // The `encoded` recording object ID (it's also a shared object)
         ],
     })
+    txnRequestUSDC.setGasBudget(9999)
     const result1 = await mySigner.signAndExecuteTransactionBlock({ transactionBlock: txnRequestUSDC })
     console.log(result1)
     console.log('========== Request succeed! ==========\n')
