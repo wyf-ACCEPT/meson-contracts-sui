@@ -11,15 +11,27 @@ const provider = new JsonRpcProvider(devnetConnection);
     console.log(myAddress)
 
     // Request from faucet 
-    const requestNum = 500_000_000      // 500 USDC
     const module_name = '0xf5b8c6f59fd837f3a1f492e4aca23d98b297c32f899838c77c75047d5a20ef97::usdc'
     const txnRequestUSDC = new TransactionBlock()
+
+    // Notice: There's no function in sui ts-sdk to upload hex-string param, so we have to convert it into Uint8Array mannully and insert the length of the array at the first location of the array.
+    const encoded = new Uint8Array(Buffer.from(
+        '01001dcd6500c00000000000f677815c000000000060634dcb98027d0102ca21', 'hex'
+    ))
+    const encoded_with_length = new Uint8Array(encoded.length + 1)
+    encoded_with_length[0] = encoded.length
+    encoded_with_length.set(encoded, 1)
+    const padding = new Uint8Array(Buffer.from('00', 'hex'))
+    const padding_with_length = new Uint8Array(padding.length + 1)
+    padding_with_length[0] = padding.length
+    padding_with_length.set(padding, 1)
+
     txnRequestUSDC.moveCall({
         target: `${module_name}::release`,
         arguments: [
-            txnRequestUSDC.pure('0x01001dcd6500c00000000000f677815c000000000010634dcb98027d0102ca21'),
-            txnRequestUSDC.pure('0x00'),  // signature
-            txnRequestUSDC.pure('0x00'),  // initiator
+            txnRequestUSDC.pure(encoded_with_length),
+            txnRequestUSDC.pure(padding_with_length),  // signature
+            txnRequestUSDC.pure(padding_with_length),  // initiator
             txnRequestUSDC.object('0x4e8c2e80791a847e823c5162a9b1afa37fc0c3ec45d346881fd0c38595d87bb2'),
             // The USDC-faucet object ID (it's a shared object, not belong to anyone)
             txnRequestUSDC.object('0x17bc086075749d65db1b108f0fc65efcb68e032494a4b42ea2e09e63dd6aad72'),

@@ -23,4 +23,4 @@ curl --location --request POST 'https://faucet.devnet.sui.io/gas' \
 sui client publish --gas-budget 1000    # or `sui console` to enter interactive shell
 
 # 4 Transfer
-transfer --to 0x20c179226989dd34c7bb5918ce66e4c98e41ddd8b2d0f9427e00ec7542c719cf --gas-budget 9999 --object-id 0x20c179226989dd34c7bb5918ce66e4c98e41ddd8b2d0f9427e00ec7542c719cf
+transfer --to 0x6184a02e810ef8a196ff5085b6dc75a918b2e8591064c2e69e26d47851d72092 --gas-budget 9999 --object-id 0xb4ad837bbdec1a378c9ea4423c3885eecd7cd61793b3b8f8499d7d1a3f496b74
