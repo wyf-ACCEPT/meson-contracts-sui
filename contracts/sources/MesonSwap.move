@@ -20,7 +20,7 @@ module Meson::MesonSwap {
     const ESWAP_CANNOT_CANCEL_BEFORE_EXPIRE: u64 = 45;
 
 
-    /* ---------------------------- Main function ---------------------------- */
+    /* ---------------------------- Main functions ---------------------------- */
     // Named consistently with solidity contracts
     /// `encoded_swap` in format of `version:uint8|amount:uint40|salt:uint80|fee:uint40|expire_ts:uint40|out_chain:uint16|out_coin:uint8|in_chain:uint16|in_coin:uint8`
     ///   version: Version of encoding
@@ -49,7 +49,7 @@ module Meson::MesonSwap {
     ) {
         MesonHelpers::is_encoded_valid(encoded_swap);
         MesonHelpers::for_initial_chain(encoded_swap);
-        MesonStates::match_coin_type<CoinType>(storeG, MesonHelpers::in_coin_index_from(encoded_swap));
+        MesonStates::match_coin_type<CoinType>(MesonHelpers::in_coin_index_from(encoded_swap), storeG);
         MesonHelpers::is_eth_addr(initiator);
 
         let amount = MesonHelpers::amount_from(encoded_swap);
@@ -97,7 +97,7 @@ module Meson::MesonSwap {
         vector::push_back(&mut encoded_swap, 0xff); // so it cannot be identical to a swap_id
         let (_, _, from_address) = MesonStates::remove_posted_swap(encoded_swap, clock_object, storeG);
         let coins = MesonStates::coins_from_pending(encoded_swap, storeC);
-        transfer::transfer(coins, from_address);
+        transfer::public_transfer(coins, from_address);
     }
 
 
@@ -121,9 +121,9 @@ module Meson::MesonSwap {
 
         let coins = MesonStates::coins_from_pending(posted_swap_key, storeC);
         if (deposit_to_pool) {
-            MesonStates::coins_to_pool<CoinType>(pool_index, coins, storeC);
+            MesonStates::coins_to_pool(pool_index, coins, storeC);
         } else {
-            transfer::transfer(coins, MesonStates::owner_of_pool(pool_index, storeG));
+            transfer::public_transfer(coins, MesonStates::owner_of_pool(pool_index, storeG));
         }
     }
 }

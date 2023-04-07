@@ -7,7 +7,7 @@ module Meson::MesonHelpers {
 
     friend Meson::MesonStates;
     friend Meson::MesonSwap;
-//     friend Meson::MesonPools;
+    friend Meson::MesonPools;
 
     const EINVALID_ETH_ADDRESS: u64 = 8;
     const EINVALID_PUBLIC_KEY: u64 = 9;

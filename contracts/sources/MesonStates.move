@@ -28,7 +28,7 @@ module Meson::MesonStates {
 
 //     const DEPLOYER: address = @Meson;
     friend Meson::MesonSwap;
-//     friend Meson::MesonPools;
+    friend Meson::MesonPools;
 
 
 
@@ -120,13 +120,13 @@ module Meson::MesonStates {
 
 
     /* ---------------------------- Utils functions ---------------------------- */
-    public(friend) fun coin_type_for_index(storeG: &GeneralStore, coin_index: u8): TypeName {
+    public(friend) fun coin_type_for_index(coin_index: u8, storeG: &GeneralStore): TypeName {
         *table::borrow(&storeG.supported_coins, coin_index)
     }
 
-    public(friend) fun match_coin_type<CoinType>(storeG: &GeneralStore, coin_index: u8) {
+    public(friend) fun match_coin_type<CoinType>(coin_index: u8, storeG: &GeneralStore) {
         let type1 = type_name::get<CoinType>();
-        let type2 = coin_type_for_index(storeG, coin_index);
+        let type2 = coin_type_for_index(coin_index, storeG);
         assert!(
             type_name::into_string(type1) == type_name::into_string(type2),
             ESWAP_COIN_MISMATCH
