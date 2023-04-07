@@ -27,7 +27,7 @@ module Meson::MesonStates {
     const ESWAP_BONDED_TO_OTHERS: u64 = 44;
 
 //     const DEPLOYER: address = @Meson;
-//     friend Meson::MesonSwap;
+    friend Meson::MesonSwap;
 //     friend Meson::MesonPools;
 
 
@@ -86,10 +86,10 @@ module Meson::MesonStates {
     // Named consistently with solidity contracts
     public entry fun transferPremiumManager(
         new_premium_manager: address,
-        store: &mut GeneralStore,
+        storeG: &mut GeneralStore,
         ctx: &mut TxContext,
     ) {
-        let pool_owners = &mut store.pool_owners;
+        let pool_owners = &mut storeG.pool_owners;
         let old_premium_manager = table::remove(pool_owners, 0);
         assert!(tx_context::sender(ctx) == old_premium_manager, EUNAUTHORIZED);
         table::add(pool_owners, 0, new_premium_manager);
@@ -100,10 +100,10 @@ module Meson::MesonStates {
     public entry fun addSupportToken<CoinType>(
         _: &AdminCap,
         coin_index: u8,
-        store: &mut GeneralStore,
+        storeG: &mut GeneralStore,
         ctx: &mut TxContext,
     ) {       // `&AdminCap` ensures the sender is the deployer
-        let supported_coins = &mut store.supported_coins;
+        let supported_coins = &mut storeG.supported_coins;
         if (table::contains(supported_coins, coin_index)) {
             table::remove(supported_coins, coin_index);
         };
@@ -120,63 +120,63 @@ module Meson::MesonStates {
 
 
     /* ---------------------------- Utils functions ---------------------------- */
-    public(friend) fun coin_type_for_index(store: &GeneralStore, coin_index: u8): TypeName {
-        *table::borrow(&store.supported_coins, coin_index)
+    public(friend) fun coin_type_for_index(storeG: &GeneralStore, coin_index: u8): TypeName {
+        *table::borrow(&storeG.supported_coins, coin_index)
     }
 
-    public(friend) fun match_coin_type<CoinType>(store: &GeneralStore, coin_index: u8) {
+    public(friend) fun match_coin_type<CoinType>(storeG: &GeneralStore, coin_index: u8) {
         let type1 = type_name::get<CoinType>();
-        let type2 = coin_type_for_index(store, coin_index);
+        let type2 = coin_type_for_index(storeG, coin_index);
         assert!(
             type_name::into_string(type1) == type_name::into_string(type2),
             ESWAP_COIN_MISMATCH
         );
     }
 
-    public(friend) fun owner_of_pool(store: &GeneralStore, pool_index: u64): address {
-        let pool_owners = &store.pool_owners;
+    public(friend) fun owner_of_pool(pool_index: u64, storeG: &GeneralStore): address {
+        let pool_owners = &storeG.pool_owners;
         // TODO: do we need to check contains?
         assert!(table::contains(pool_owners, pool_index), EPOOL_NOT_REGISTERED);
         *table::borrow(pool_owners, pool_index)
     }
 
-    public(friend) fun assert_is_premium_manager(store: &GeneralStore, addr: address) {
-        assert!(addr == owner_of_pool(store, 0), EUNAUTHORIZED);
+    public(friend) fun assert_is_premium_manager(addr: address, storeG: &GeneralStore) {
+        assert!(addr == owner_of_pool(0, storeG), EUNAUTHORIZED);
     }
 
-    public(friend) fun pool_index_of(store: &GeneralStore, authorized_addr: address): u64 {
-        let pool_of_authorized_addr = &store.pool_of_authorized_addr;
+    public(friend) fun pool_index_of(authorized_addr: address, storeG: &GeneralStore): u64 {
+        let pool_of_authorized_addr = &storeG.pool_of_authorized_addr;
         // TODO: do we need to check contains?
         assert!(table::contains(pool_of_authorized_addr, authorized_addr), EPOOL_ADDR_NOT_AUTHORIZED);
         *table::borrow(pool_of_authorized_addr, authorized_addr)
     }
 
-    public(friend) fun pool_index_if_owner(store: &GeneralStore, addr: address): u64 {
-        let pool_index = pool_index_of(store, addr);
-        assert!(addr == owner_of_pool(store, pool_index), EPOOL_NOT_POOL_OWNER);
+    public(friend) fun pool_index_if_owner(addr: address, storeG: &GeneralStore): u64 {
+        let pool_index = pool_index_of(addr, storeG);
+        assert!(addr == owner_of_pool(pool_index, storeG), EPOOL_NOT_POOL_OWNER);
         pool_index
     }
 
-    public(friend) fun register_pool_index(store: &mut GeneralStore, pool_index: u64, owner_addr: address) {
+    public(friend) fun register_pool_index(pool_index: u64, owner_addr: address, storeG: &mut GeneralStore) {
         assert!(pool_index != 0, EPOOL_INDEX_CANNOT_BE_ZERO);
-        assert!(!table::contains(&store.pool_owners, pool_index), EPOOL_ALREADY_REGISTERED);
-        assert!(!table::contains(&store.pool_of_authorized_addr, owner_addr), EPOOL_ADDR_ALREADY_AUTHORIZED);
-        table::add(&mut store.pool_owners, pool_index, owner_addr);
-        table::add(&mut store.pool_of_authorized_addr, owner_addr, pool_index);
+        assert!(!table::contains(&storeG.pool_owners, pool_index), EPOOL_ALREADY_REGISTERED);
+        assert!(!table::contains(&storeG.pool_of_authorized_addr, owner_addr), EPOOL_ADDR_ALREADY_AUTHORIZED);
+        table::add(&mut storeG.pool_owners, pool_index, owner_addr);
+        table::add(&mut storeG.pool_of_authorized_addr, owner_addr, pool_index);
     }
 
-    public(friend) fun add_authorized(store: &mut GeneralStore, pool_index: u64, addr: address) {
+    public(friend) fun add_authorized(pool_index: u64, addr: address, storeG: &mut GeneralStore) {
         assert!(pool_index != 0, EPOOL_INDEX_CANNOT_BE_ZERO);
-        assert!(!table::contains(&store.pool_of_authorized_addr, addr), EPOOL_ADDR_ALREADY_AUTHORIZED);
-        table::add(&mut store.pool_of_authorized_addr, addr, pool_index);
+        assert!(!table::contains(&storeG.pool_of_authorized_addr, addr), EPOOL_ADDR_ALREADY_AUTHORIZED);
+        table::add(&mut storeG.pool_of_authorized_addr, addr, pool_index);
     }
 
-    public(friend) fun remove_authorized(store: &mut GeneralStore, pool_index: u64, addr: address) {
-        assert!(pool_index == table::remove(&mut store.pool_of_authorized_addr, addr), EPOOL_ADDR_AUTHORIZED_TO_ANOTHER);
+    public(friend) fun remove_authorized(pool_index: u64, addr: address, storeG: &mut GeneralStore) {
+        assert!(pool_index == table::remove(&mut storeG.pool_of_authorized_addr, addr), EPOOL_ADDR_AUTHORIZED_TO_ANOTHER);
     }
 
-    public(friend) fun coins_to_pool<CoinType>(store: &mut StoreForCoin<CoinType>, pool_index: u64, coins_to_add: Coin<CoinType>) {
-        let in_pool_coins = &mut store.in_pool_coins;
+    public(friend) fun coins_to_pool<CoinType>(pool_index: u64, coins_to_add: Coin<CoinType>, storeC: &mut StoreForCoin<CoinType>) {
+        let in_pool_coins = &mut storeC.in_pool_coins;
         if (table::contains(in_pool_coins, pool_index)) {
             let current_coins = table::borrow_mut(in_pool_coins, pool_index);
             coin::join<CoinType>(current_coins, coins_to_add);
@@ -186,57 +186,56 @@ module Meson::MesonStates {
     }
 
     public(friend) fun coins_from_pool<CoinType>(
-        store: &mut StoreForCoin<CoinType>, 
         pool_index: u64, 
         amount: u64, 
+        storeC: &mut StoreForCoin<CoinType>, 
         ctx: &mut TxContext
     ): Coin<CoinType> {
-        let current_coins = table::borrow_mut(&mut store.in_pool_coins, pool_index);
+        let current_coins = table::borrow_mut(&mut storeC.in_pool_coins, pool_index);
         coin::split<CoinType>(current_coins, amount, ctx)
     }
 
-    public(friend) fun coins_to_pending<CoinType>(store: &mut StoreForCoin<CoinType>, key: vector<u8>, coins: Coin<CoinType>) {
-        table::add(&mut store.pending_coins, key, coins);
+    public(friend) fun coins_to_pending<CoinType>(key: vector<u8>, coins: Coin<CoinType>, storeC: &mut StoreForCoin<CoinType>) {
+        table::add(&mut storeC.pending_coins, key, coins);
     }
 
-    public(friend) fun coins_from_pending<CoinType>(store: &mut StoreForCoin<CoinType>, key: vector<u8>): Coin<CoinType> {
-        table::remove(&mut store.pending_coins, key)
+    public(friend) fun coins_from_pending<CoinType>(key: vector<u8>, storeC: &mut StoreForCoin<CoinType>): Coin<CoinType> {
+        table::remove(&mut storeC.pending_coins, key)
     }
 
 
 
     /* ---------------------------- Swap-related functions ---------------------------- */
     public(friend) fun add_posted_swap(
-        store: &mut GeneralStore,
         encoded_swap: vector<u8>,
         pool_index: u64,
         initiator: vector<u8>,
         from_address: address,
+        storeG: &mut GeneralStore,
     ) {
-        let posted_swaps = &mut store.posted_swaps;
+        let posted_swaps = &mut storeG.posted_swaps;
         assert!(!table::contains(posted_swaps, encoded_swap), ESWAP_ALREADY_EXISTS);
         table::add(posted_swaps, encoded_swap, PostedSwap { pool_index, initiator, from_address });
     }
 
     public(friend) fun bond_posted_swap(
-        store: &mut GeneralStore,
         encoded_swap: vector<u8>,
         pool_index: u64,
+        storeG: &mut GeneralStore,
     ) {
-        
-        let posted = table::borrow_mut(&mut store.posted_swaps, encoded_swap);
+        let posted = table::borrow_mut(&mut storeG.posted_swaps, encoded_swap);
         assert!(posted.from_address != @0x0, ESWAP_NOT_EXISTS);
         assert!(posted.pool_index == 0, ESWAP_BONDED_TO_OTHERS);
         posted.pool_index = pool_index;
     }
 
     public(friend) fun remove_posted_swap(
-        store: &mut GeneralStore,
         encoded_swap: vector<u8>,
         clock_object: &Clock,       // The `Clock` object ID is `0x6`
+        storeG: &mut GeneralStore,
     ): (u64, vector<u8>, address)  {
         
-        let posted_swaps = &mut store.posted_swaps;
+        let posted_swaps = &mut storeG.posted_swaps;
         // TODO: do we need to check contains?
         assert!(table::contains(posted_swaps, encoded_swap), ESWAP_NOT_EXISTS);
 
@@ -262,24 +261,24 @@ module Meson::MesonStates {
     }
 
     public(friend) fun add_locked_swap(
-        store: &mut GeneralStore,
         swap_id: vector<u8>,
         pool_index: u64,
         until: u64,
         recipient: address,
+        storeG: &mut GeneralStore,
     ) {
-        let locked_swaps = &mut store.locked_swaps;
+        let locked_swaps = &mut storeG.locked_swaps;
         assert!(!table::contains(locked_swaps, swap_id), ESWAP_ALREADY_EXISTS);
         table::add(locked_swaps, swap_id, LockedSwap { pool_index, until, recipient });
     }
 
 
     public(friend) fun remove_locked_swap(
-        store: &mut GeneralStore, 
         swap_id: vector<u8>,
         clock_object: &Clock,
+        storeG: &mut GeneralStore, 
     ): (u64, u64, address)  {
-        let locked_swaps = &mut store.locked_swaps;
+        let locked_swaps = &mut storeG.locked_swaps;
 
         let locked = table::borrow(locked_swaps, swap_id);
         assert!(locked.until != 0, ESWAP_NOT_EXISTS);

@@ -6,7 +6,7 @@ module Meson::MesonHelpers {
     use sui::hash;
 
     friend Meson::MesonStates;
-//     friend Meson::MesonSwap;
+    friend Meson::MesonSwap;
 //     friend Meson::MesonPools;
 
     const EINVALID_ETH_ADDRESS: u64 = 8;
