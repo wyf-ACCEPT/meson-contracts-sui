@@ -1,3 +1,6 @@
+call-usdc.js
+starter.js
+try-sign.js
 node_modules
 wallet-*
 build
