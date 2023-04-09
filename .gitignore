@@ -2,5 +2,4 @@ node_modules
 wallet-*
 build
 sui.log.*
-sui-example
-sui-framework
+Steps.sh
