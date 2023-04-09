@@ -2,5 +2,5 @@ node_modules
 wallet-*
 build
 sui.log.*
-sui-framework-link
-sui-example-link
+sui-example
+sui-framework
