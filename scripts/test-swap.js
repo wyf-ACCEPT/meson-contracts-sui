@@ -11,9 +11,9 @@ class Utils {
         this.provider = new JsonRpcProvider(devnetConnection);
 //         this.usdc_index = 160363393
 //         this.usdt_index = 160363405
-//         this.request_typehash = '7b521e60f64ab56ff03ddfb26df49be54b20672b7acfffc1adeb256b554ccb25'
-//         this.release_typehash = 'd23291d9d999318ac3ed13f43ac8003d6fbd69a4b532aeec9ffad516010a208c'
-//         this.encoder = new TextEncoder()
+        this.request_typehash = '7b521e60f64ab56ff03ddfb26df49be54b20672b7acfffc1adeb256b554ccb25'
+        this.release_typehash = 'd23291d9d999318ac3ed13f43ac8003d6fbd69a4b532aeec9ffad516010a208c'
+        this.encoder = new TextEncoder()
 
 //         // bind functions
 //         this.sp_func = this.sp_func.bind(this)
@@ -35,6 +35,12 @@ class Utils {
         this.initiator_address = this.initiator_wallet.address.slice(2)
         this.initiator_buffer = Buffer.from(this.initiator_address, 'hex')
 
+        // objects (for SUI only)
+        this.usdc_module = '0x9baf2606b8e3ce9c287169953e928acf464b487a2376ade2cc7d3639c3a7e7d3::USDC'
+        this.usdt_module = '0x9baf2606b8e3ce9c287169953e928acf464b487a2376ade2cc7d3639c3a7e7d3::USDT'
+        this.uct_module = '0x9baf2606b8e3ce9c287169953e928acf464b487a2376ade2cc7d3639c3a7e7d3::UCT'
+        this.usdc_object_alice = ''
+        this.uct_object_alice = ''
     }
 
     load_mnemonic(string) {
@@ -134,15 +140,15 @@ class Utils {
 //         return await this.client.getTransactionParams().do()
 //     }
 
-//     async show_account_info() {
-//         console.log("========================== Account Balance Info ==========================")
-//         let info = await this.client.accountInformation(this.alice.addr).do()
-//         console.log(`Alice ${info.address} balance: ${info.amount / 1e6}`)
-//         info = await this.client.accountInformation(this.bob.addr).do()
-//         console.log(`Bob   ${info.address} balance: ${info.amount / 1e6}`)
-//         info = await this.client.accountInformation(this.carol.addr).do()
-//         console.log(`Carol ${info.address} balance: ${info.amount / 1e6}\n`)
-//     }
+    async show_account_info() {
+        console.log("========================== Account Balance Info ==========================")
+        let info = await this.provider.getBalance({ owner: this.alice_address })
+        console.log(`Alice ${this.alice_address} balance: ${info.totalBalance / 1e9} SUI`)
+        info = await this.provider.getBalance({ owner: this.bob_address })
+        console.log(`Bob ${this.bob_address} balance: ${info.totalBalance / 1e9} SUI`)
+        info = await this.provider.getBalance({ owner: this.carol_address })
+        console.log(`Carol ${this.carol_address} balance: ${info.totalBalance / 1e9} SUI`)
+    }
 
 //     async submit_transaction(private_key, unsigned_txn) {
 //         let signed_txn = unsigned_txn.signTxn(private_key)
@@ -214,11 +220,12 @@ class Utils {
 main = async () => {
 
     const utils = new Utils()
-    console.log(fromB64)
-//     await utils.show_account_info()
+    await utils.show_account_info()
 
-//     const transfer_to_app_amount = 400_000
-//     const lp_deposit_amount = 125 * 1_000_000
+    const transfer_to_app_amount = 400_000
+    const lp_deposit_amount = 125 * 1_000_000
+    
+    const a = 
 //     const { alice, bob, carol, usdc_index, usdt_index, on_complete_param, initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, build_encoded, get_swapID, get_expire_ts, sign_request, sign_release, show_boxes } = utils
 
 
