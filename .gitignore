@@ -1,6 +1,7 @@
 call-usdc.js
 starter.js
 try-sign.js
+algorand-meson-test.js
 node_modules
 wallet-*
 build
