@@ -4,14 +4,14 @@ const provider = new JsonRpcProvider(devnetConnection);
 (async () => {
 
     // Load wallet
-    const mnemonic = 'dad glow shoe exclude manual glance certain bachelor nose depend high jaguar moon giraffe truth dune budget erupt peace paddle twin salon wrestle hello'
+    const mnemonic = 'broccoli scene industry labor tortoise adult dinosaur wear fox fresh repeat antenna fury pact hotel sting enough vault like social prize leisure consider horse'
     const myKeypair = Secp256k1Keypair.deriveKeypair(mnemonic)
     const mySigner = new RawSigner(myKeypair, provider)
-    const myAddress = myKeypair.getPublicKey().toSuiAddress()       // 0xe61fe099d95b8d90b65c63d649ed96c56131d6db48df058e9dbd6e06722312fd
+    const myAddress = myKeypair.getPublicKey().toSuiAddress()       // 0x44acc9799ced77c669c376aae77cee0d64ae31f48db81e4a0e5862a3ad8ae00e
     console.log(myAddress)
 
     // Request from faucet 
-    const module_name = '0xf5b8c6f59fd837f3a1f492e4aca23d98b297c32f899838c77c75047d5a20ef97::usdc'
+    const module_name = '0xf89dc9da6d442eed24e2524ff3d1f31dc76c0e5d0bcaaa913b3530f6a7e9585::usdc'
     const txnRequestUSDC = new TransactionBlock()
 
     // Notice: There's no function in sui ts-sdk to upload hex-string param, so we have to convert it into Uint8Array mannully and insert the length of the array at the first location of the array.
@@ -32,13 +32,13 @@ const provider = new JsonRpcProvider(devnetConnection);
             txnRequestUSDC.pure(encoded_with_length),
             txnRequestUSDC.pure(padding_with_length),  // signature
             txnRequestUSDC.pure(padding_with_length),  // initiator
-            txnRequestUSDC.object('0x4e8c2e80791a847e823c5162a9b1afa37fc0c3ec45d346881fd0c38595d87bb2'),
+            txnRequestUSDC.object('0x1214501fc9024b5020725c09f2d687ef91cc833394da158014cd9237fa2eab17'),
             // The USDC-faucet object ID (it's a shared object, not belong to anyone)
-            txnRequestUSDC.object('0x17bc086075749d65db1b108f0fc65efcb68e032494a4b42ea2e09e63dd6aad72'),
+            txnRequestUSDC.object('0xadb80bec1c09d1653fc103d204984c23ae2fd3f0e39a11620f1c8a25f1cd4a89'),
             // The `encoded` recording object ID (it's also a shared object)
         ],
     })
-    txnRequestUSDC.setGasBudget(9999)
+    txnRequestUSDC.setGasBudget(99999999)
     const result1 = await mySigner.signAndExecuteTransactionBlock({ transactionBlock: txnRequestUSDC })
     console.log(result1)
     console.log('========== Request succeed! ==========\n')
@@ -53,7 +53,7 @@ const provider = new JsonRpcProvider(devnetConnection);
     // Transfer
     const usdcObjectUsed = usdcObjects[0].coinObjectId
     const transferNum = 120_000_000
-    const destAddress = '0x442c1e065aeca62d4f6b6a430d06048b7fd1616855c8176a0ce156996866a111'
+    const destAddress = '0x57646a5dfb78c090bbd45a8f6ce71d1001aee73aa73a4eb52ad2d6b296d78bcb'
     const txnTransferUSDC = new TransactionBlock()
     txnTransferUSDC.moveCall({
         target: `${module_name}::transfer_usdc`,
