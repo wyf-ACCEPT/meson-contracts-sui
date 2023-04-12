@@ -225,7 +225,7 @@ main = async () => {
     const transfer_to_app_amount = 400_000
     const lp_deposit_amount = 125 * 1_000_000
     
-    const a = 
+    // const a = 
 //     const { alice, bob, carol, usdc_index, usdt_index, on_complete_param, initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, build_encoded, get_swapID, get_expire_ts, sign_request, sign_release, show_boxes } = utils
 
 

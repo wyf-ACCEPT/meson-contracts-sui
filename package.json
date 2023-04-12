@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@mysten/sui.js": "^0.31.0",
+    "@mysten/sui.js": "^0.32.1",
     "@scallop-dao/sui-kit": "^0.30.8",
     "dotenv": "^16.0.3",
     "ethers": "^6.2.3"
