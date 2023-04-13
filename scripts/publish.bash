@@ -6,6 +6,6 @@ sui move test
 sui console
 
 # --- You're in sui console now. If you don't have a wallet, use `new-address -h` to learn more.
-publish --gas-budget 99999
+publish --gas-budget 999999999
 
 # You can view the generated objects via explorer (https://explorer.sui.io/).
