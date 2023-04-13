@@ -66,7 +66,7 @@ module Meson::MesonStates {
 
 
     /* ---------------------------- Admin functions ---------------------------- */
-    fun init_module(ctx: &mut TxContext) {
+    fun init(ctx: &mut TxContext) {
         let sender_addr = tx_context::sender(ctx);          // Notice: the sender is the `deployer`, different from which in Aptos
         transfer::transfer(AdminCap { id: object::new(ctx) }, sender_addr);     // Transfer the admin capability to the creator
 

@@ -1,8 +1,28 @@
 require('dotenv').config()
 const { readFileSync } = require('fs')
 const { Wallet, keccak256, assert } = require('ethers')
-const { JsonRpcProvider, devnetConnection, Secp256k1Keypair, RawSigner, getTransferSuiTransaction, fromB64 } = require('@mysten/sui.js');
+const { JsonRpcProvider, devnetConnection, Secp256k1Keypair, RawSigner, getTransferSuiTransaction, fromB64, DisplayFieldsBackwardCompatibleResponse, TransactionBlock } = require('@mysten/sui.js');
 const { SuiAccountManager } = require('@scallop-dao/sui-kit')
+
+
+class PublishLogParser {
+    constructor() {
+        this.publish_log_path = './publish-output.log'
+        this.content = readFileSync(this.publish_log_path, 'utf-8')
+    }
+
+    parse() {
+        return {
+            AdminCap: this.content.match(/AdminCap"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)"/)[1],
+            GeneralStore: this.content.match(/GeneralStore"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)"/)[1],
+            PackageId: this.content.match(/"packageId": String\("(0x[0-9a-fA-F]+)"/)[1],
+            ObjectUSDC: this.content.match(/Coin<0x[0-9a-fA-F]+::USDC::USDC>"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)/)[1],
+            ObjectUSDT: this.content.match(/Coin<0x[0-9a-fA-F]+::USDT::USDT>"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)/)[1],
+            ObjectUCT: this.content.match(/Coin<0x[0-9a-fA-F]+::UCT::UCT>"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)/)[1],
+            digest: this.content.match(/----- Transaction Digest ----\n(.+)/)[1]
+        }
+    }
+}
 
 
 class Utils {
@@ -36,11 +56,15 @@ class Utils {
         this.initiator_buffer = Buffer.from(this.initiator_address, 'hex')
 
         // objects (for SUI only)
-        this.usdc_module = '0x9baf2606b8e3ce9c287169953e928acf464b487a2376ade2cc7d3639c3a7e7d3::USDC'
-        this.usdt_module = '0x9baf2606b8e3ce9c287169953e928acf464b487a2376ade2cc7d3639c3a7e7d3::USDT'
-        this.uct_module = '0x9baf2606b8e3ce9c287169953e928acf464b487a2376ade2cc7d3639c3a7e7d3::UCT'
-        this.usdc_object_alice = ''
-        this.uct_object_alice = ''
+        const parser = new PublishLogParser()
+        this.object_ids = parser.parse()
+        this.usdc_module = `${this.object_ids.PackageId}::USDC`
+        this.usdt_module = `${this.object_ids.PackageId}::USDT`
+        this.uct_module = `${this.object_ids.PackageId}::UCT`
+        this.states = `${this.object_ids.PackageId}::MesonStates`
+        this.swap = `${this.object_ids.PackageId}::MesonSwap`
+        this.pools = `${this.object_ids.PackageId}::MesonPools`
+        this.helpers = `${this.object_ids.PackageId}::MesonHelpers`
     }
 
     load_mnemonic(string) {
@@ -111,12 +135,6 @@ class Utils {
         return new Date(parseInt(timestamp_hex, 16) * 1e3)
     }
 
-//     decode_algorand_address(algo_addr) {
-//         let buffer_address = new Buffer.from(base32Decode(algo_addr, 'RFC4648').slice(0, -4))
-//         let hex_address = this.buffer_to_hex(buffer_address)
-//         return hex_address
-//     }
-
     sign_request(encoded_hexstring) {
         let content_hash = keccak256(Buffer.from(encoded_hexstring, 'hex')).slice(2)
         let digest_request = Buffer.from(keccak256(
@@ -159,25 +177,6 @@ class Utils {
 //         console.log(`Confirmed on round ${confirmedTxn["confirmed-round"]}!\n`)
 //         let response = await this.client.pendingTransactionInformation(txId).do()
 //         return response
-//     }
-
-//     async submit_transaction_group(private_key, unsigned_txns) {
-//         assignGroupID(unsigned_txns)
-//         let signed_txns = []
-//         for (var txn of unsigned_txns) {
-//             signed_txns.push(txn.signTxn(private_key))
-//         }
-//         let { txId } = await this.client.sendRawTransaction(signed_txns).do();
-//         console.log(`Signed transaction with txID: ${txId}`)
-//         let confirmedTxn = await waitForConfirmation(this.client, txId, 2)
-//         console.log(`Confirmed on round ${confirmedTxn["confirmed-round"]}!\n`)
-//         let response = await this.client.pendingTransactionInformation(txId).do()
-//         return response
-//     }
-
-//     async compile_program(source_code) {
-//         let compile_response = await this.client.compile(this.encoder.encode(source_code)).do()
-//         return new Uint8Array(Buffer.from(compile_response.result, "base64"))
 //     }
 
 //     async show_boxes(meson_index, is_in_chain) {
@@ -224,62 +223,62 @@ main = async () => {
 
     const transfer_to_app_amount = 400_000
     const lp_deposit_amount = 125 * 1_000_000
-    
-    const digest = '14XsB8nUhxex25dLshRULLZHicxahTUx8vnnCrgfUnhX'
-    // let a = await utils.provider.getTransactionBlock({digest: })
+    const gas_budget = 999999999
 
-    const r = await utils.provider.obje
-    console.log(r)
 //     const { alice, bob, carol, usdc_index, usdt_index, on_complete_param, initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, build_encoded, get_swapID, get_expire_ts, sign_request, sign_release, show_boxes } = utils
 
 
 
 
-//     // --------------------------------------------------------------------------------------------
-//     console.log("\n# 1 Create App #")
+    // --------------------------------------------------------------------------------------------
+    console.log("\n# 1 Create App #")
 
-//     console.log("================== 1.1 Create Meson App ==================")
-//     let blank_program = await utils.compile_program('#pragma version 8\nint 1\nreturn')
-//     let meson_program = await utils.compile_program(utils.meson_contract_code)
-
-//     let create_app_tx = await submit_transaction(alice.sk, makeApplicationCreateTxn(
-//         alice.addr, await sp_func(), on_complete_param, meson_program, blank_program,
-//         6, 0, 12, 0, undefined, undefined, undefined, undefined, undefined, undefined,
-//         undefined, 1, undefined
-//     ))
-//     let meson_index = create_app_tx['application-index']
-//     let meson_address = getApplicationAddress(meson_index)
-//     console.log(`Create Meson Contract success! App id: ${meson_index}, App Address: ${meson_address}\n`)
+    console.log("================== 1.1 Create Meson App ==================")
+    console.log(`This step is finished in sui console.\n`)
 
 
-//     console.log("\n================== 1.2 Transfer to Meson ==================")
-//     await submit_transaction(alice.sk, makePaymentTxnWithSuggestedParams(
-//         alice.addr, meson_address, transfer_to_app_amount, undefined, undefined, await sp_func()
-//     ))
-//     console.log("Transfer $ALGO to Meson app success!")
-//     console.log(`App ${meson_index} balance: ${(await utils.client.accountInformation(meson_address).do()).amount / 1e6} ALGO.\n`)
+    console.log("\n================== 1.2 Add USDC and USDT (Only called once) ==================")
 
+    // const txnAddUSDC = new TransactionBlock()
+    // txnAddUSDC.moveCall({
+    //     target: `${utils.states}::addSupportToken`,
+    //     typeArguments: [
+    //         `${utils.usdc_module}::USDC`,
+    //     ],
+    //     arguments: [
+    //         txnAddUSDC.pure(utils.object_ids.AdminCap),
+    //         txnAddUSDC.pure(1),
+    //         txnAddUSDC.pure(utils.object_ids.GeneralStore),
+    //     ]
+    // })
+    // txnAddUSDC.setGasBudget(gas_budget)
+    // const result1 = await utils.alice.signAndExecuteTransactionBlock({ transactionBlock: txnAddUSDC })
+    // console.log(result1)
+    // console.log('========== Meson add USDC success! ==========\n')
 
-//     console.log("\n================== 1.3 Add USDC and USDT ==================")
-//     await submit_transaction(alice.sk, makeApplicationCallTxnFromObject({
-//         from: alice.addr,
-//         suggestedParams: await sp_func(),
-//         appIndex: meson_index,
-//         onComplete: on_complete_param,
-//         appArgs: listToUint8ArrayList(['addSupportToken', 1]),
-//         foreignAssets: [usdc_index],
-//     }))
-//     console.log("Meson App Optin USDC success!\n")
-//     await submit_transaction(alice.sk, makeApplicationCallTxnFromObject({
-//         from: alice.addr,
-//         suggestedParams: await sp_func(),
-//         appIndex: meson_index,
-//         onComplete: on_complete_param,
-//         appArgs: listToUint8ArrayList(['addSupportToken', 2]),
-//         foreignAssets: [usdt_index],
-//     }))
-//     console.log("Meson App Optin USDT success!\n")
+    // Use sui explorer to find the StoreForCoin object ID!
+    const StoreUSDC = '0xa71ec4b2e9ed94efe8ba1f821550783a542a56380d46b77a472a403bd1b72698'
 
+    
+    // const txnAddUSDT = new TransactionBlock()
+    // txnAddUSDT.moveCall({
+    //     target: `${utils.states}::addSupportToken`,
+    //     typeArguments: [
+    //         `${utils.usdt_module}::USDT`,
+    //     ],
+    //     arguments: [
+    //         txnAddUSDT.pure(utils.object_ids.AdminCap),
+    //         txnAddUSDT.pure(1),
+    //         txnAddUSDT.pure(utils.object_ids.GeneralStore),
+    //     ]
+    // })
+    // txnAddUSDT.setGasBudget(gas_budget)
+    // const result1 = await utils.alice.signAndExecuteTransactionBlock({ transactionBlock: txnAddUSDT })
+    // console.log(result1)
+    // console.log('========== Meson add USDT success! ==========\n')
+
+    // Use sui explorer to find the StoreForCoin object ID!
+    const StoreUSDT = '0xc14a011959b45312ab86d4533cfec78802d24a76a4686b64287b3e1350791cd4'
 
 
 

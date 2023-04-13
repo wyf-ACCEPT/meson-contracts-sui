@@ -2,10 +2,9 @@
 sui move build
 sui move test
 
-# We recommend you to publish the meson contracts package using sui client.
-sui console
-
-# --- You're in sui console now. If you don't have a wallet, use `new-address -h` to learn more.
-publish --gas-budget 999999999
+# We recommend you to publish the meson contracts and save the related log to `publish-output.log`.
+sui client publish --gas-budget 999999999 > ./scripts/publish-output.log
 
 # You can view the generated objects via explorer (https://explorer.sui.io/).
+
+# Transfer USDC, USDT to LP and User.

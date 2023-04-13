@@ -1,0 +1,108 @@
+{
+    "cells": [
+        {
+            "language": "typescript",
+            "source": [
+                "require('dotenv').config()\nconst { readFileSync } = require('fs')\nconst { Wallet, keccak256, assert } = require('ethers')\nconst { JsonRpcProvider, devnetConnection, Secp256k1Keypair, RawSigner, getTransferSuiTransaction, fromB64 } = require('@mysten/sui.js');\nconst { SuiAccountManager } = require('@scallop-dao/sui-kit')\n\nconst provider = new JsonRpcProvider(devnetConnection)"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "const publish_log = readFileSync('./publish-output.log', 'utf-8')"
+            ],
+            "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// AdminCap\npublish_log.match(/AdminCap\"\\),\\n\\s+\"objectId\": String\\(\"(0x[0-9a-fA-F]+)\"/)[1]"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "\u001b[32m'0xb6a0d5686d5a5fbbe375bd855a3c9e5eea196ae642d69c43236dc45f963e677d'\u001b[39m"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// GeneralStore\npublish_log.match(/GeneralStore\"\\),\\n\\s+\"objectId\": String\\(\"(0x[0-9a-fA-F]+)\"/)[1]"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "\u001b[32m'0xd51d23f06a5e255a09ca08677ab2f31871f1d70aae80a5f8261c5be9047b668c'\u001b[39m"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// PackageId\npublish_log.match(/\"packageId\": String\\(\"(0x[0-9a-fA-F]+)\"/)[1]"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "\u001b[32m'0xb0eb2fe2a0b06a6b78a81c08d89da7d953aa2b2d3a91439e5728fe26fbdf725e'\u001b[39m"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// USDC, USDT, UCT object\npublish_log.match(/Coin<0x[0-9a-fA-F]+::USDC::USDC>\"\\),\\n\\s+\"objectId\": String\\(\"(0x[0-9a-fA-F]+)/)[1]\npublish_log.match(/Coin<0x[0-9a-fA-F]+::USDT::USDT>\"\\),\\n\\s+\"objectId\": String\\(\"(0x[0-9a-fA-F]+)/)[1]\npublish_log.match(/Coin<0x[0-9a-fA-F]+::UCT::UCT>\"\\),\\n\\s+\"objectId\": String\\(\"(0x[0-9a-fA-F]+)/)[1]"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "\u001b[32m'0xd84bbdd0243bcd3bc94ae1f5bdc1321385fd16bd7e786332dc60fdc6433ffb08'\u001b[39m"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "// Digest\npublish_log.match(/----- Transaction Digest ----\\n(.+)/)[1]"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "\u001b[32m'B23eJsoRsRB4Wen8a9g8uvCKJQ8ycMfqGeBbWhivrGu6'\u001b[39m"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
