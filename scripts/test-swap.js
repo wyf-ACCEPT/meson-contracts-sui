@@ -7,7 +7,7 @@ const { SuiAccountManager } = require('@scallop-dao/sui-kit')
 
 class PublishLogParser {
     constructor() {
-        this.publish_log_path = './publish-output.log'
+        this.publish_log_path = './scripts/publish-output.log'
         this.content = readFileSync(this.publish_log_path, 'utf-8')
     }
 
@@ -36,13 +36,11 @@ class Utils {
         this.encoder = new TextEncoder()
 
 //         // bind functions
-//         this.sp_func = this.sp_func.bind(this)
 //         this.listToUint8ArrayList = this.listToUint8ArrayList.bind(this)
 //         this.submit_transaction = this.submit_transaction.bind(this)
 //         this.submit_transaction_group = this.submit_transaction_group.bind(this)
-//         this.sign_request = this.sign_request.bind(this)
-//         this.sign_release = this.sign_release.bind(this)
-//         this.show_boxes = this.show_boxes.bind(this)
+        this.sign_request = this.sign_request.bind(this)
+        this.sign_release = this.sign_release.bind(this)
 
         // accounts
         this.alice = this.load_mnemonic(process.env.WALLET_1)
@@ -75,6 +73,14 @@ class Utils {
         return Secp256k1Keypair.deriveKeypair(string).getPublicKey().toSuiAddress()
     }
 
+    add_length_to_hexstr(hexstring) {
+        const u8ar = new Uint8Array(Buffer.from(hexstring, 'hex'))
+        const u8ar_pro = new Uint8Array(u8ar.length + 1)
+        u8ar_pro[0] = u8ar.length
+        u8ar_pro.set(u8ar, 1)
+        return u8ar_pro
+    }
+
 //     intToUint8Array(num, bytes_length) {
 //         let buffer = new ArrayBuffer(bytes_length);
 //         let view = new DataView(buffer);
@@ -96,9 +102,9 @@ class Utils {
 //         return arraylist
 //     }
 
-//     get_expire_ts(delay = 90) {
-//         return Math.floor(Date.now() / 1e3 + 60 * delay)
-//     }
+    get_expire_ts(delay = 90) {
+        return Math.floor(Date.now() / 1e3 + 60 * delay)
+    }
 
     build_encoded(amount, expireTs, outToken, inToken, return_bytes = true,
         salt = 'c00000000000e7552620', fee = '0000000000') {
@@ -144,19 +150,15 @@ class Utils {
         return [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
     }
 
-//     sign_release(encoded_hexstring, recipient_algo_addr) {
-//         let recipient_addr = this.decode_algorand_address(recipient_algo_addr)
-//         let content_hash = keccak256(Buffer.from(encoded_hexstring + recipient_addr, 'hex')).slice(2)
-//         let digest_release = Buffer.from(keccak256(
-//             Buffer.from(this.release_typehash + content_hash, 'hex')
-//         ).slice(2), 'hex')
-//         let sig = this.initiator_wallet.signingKey.sign(digest_release)
-//         return [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
-//     }
-
-//     async sp_func() {
-//         return await this.client.getTransactionParams().do()
-//     }
+    sign_release(encoded_hexstring, recipient_algo_addr) {
+        let recipient_addr = this.decode_algorand_address(recipient_algo_addr)
+        let content_hash = keccak256(Buffer.from(encoded_hexstring + recipient_addr, 'hex')).slice(2)
+        let digest_release = Buffer.from(keccak256(
+            Buffer.from(this.release_typehash + content_hash, 'hex')
+        ).slice(2), 'hex')
+        let sig = this.initiator_wallet.signingKey.sign(digest_release)
+        return [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
+    }
 
     async show_account_info() {
         console.log("========================== Account Balance Info ==========================")
@@ -222,10 +224,12 @@ main = async () => {
     await utils.show_account_info()
 
     const transfer_to_app_amount = 400_000
-    const lp_deposit_amount = 125 * 1_000_000
+    const lp_deposit_amount = 1_000_000 * 1_000_000     // $1M
     const gas_budget = 999999999
+    let txn_result, txn
 
-//     const { alice, bob, carol, usdc_index, usdt_index, on_complete_param, initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, build_encoded, get_swapID, get_expire_ts, sign_request, sign_release, show_boxes } = utils
+//     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
+    const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request } = utils
 
 
 
@@ -252,9 +256,9 @@ main = async () => {
     //     ]
     // })
     // txnAddUSDC.setGasBudget(gas_budget)
-    // const result1 = await utils.alice.signAndExecuteTransactionBlock({ transactionBlock: txnAddUSDC })
-    // console.log(result1)
-    // console.log('========== Meson add USDC success! ==========\n')
+    // txn_result = await alice.signAndExecuteTransactionBlock({ transactionBlock: txnAddUSDC })
+    // console.log(txn_result)
+    // console.log('========== Meson add USDC success! ==========')
 
     // Use sui explorer to find the StoreForCoin object ID!
     const StoreUSDC = '0xa71ec4b2e9ed94efe8ba1f821550783a542a56380d46b77a472a403bd1b72698'
@@ -273,86 +277,111 @@ main = async () => {
     //     ]
     // })
     // txnAddUSDT.setGasBudget(gas_budget)
-    // const result1 = await utils.alice.signAndExecuteTransactionBlock({ transactionBlock: txnAddUSDT })
-    // console.log(result1)
+    // txn_result = await alice.signAndExecuteTransactionBlock({ transactionBlock: txnAddUSDT })
+    // console.log(txn_result)
     // console.log('========== Meson add USDT success! ==========\n')
 
     // Use sui explorer to find the StoreForCoin object ID!
     const StoreUSDT = '0xc14a011959b45312ab86d4533cfec78802d24a76a4686b64287b3e1350791cd4'
 
 
-
-//     // --------------------------------------------------------------------------------------------
-//     console.log("\n# 2 LP deposit #")
-
-//     console.log("================== 2.1 LP Opt in App ==================")
-//     await submit_transaction(bob.sk, makeApplicationOptInTxn(
-//         bob.addr, await sp_func(), meson_index,
-//     ))
-//     console.log("LP(Bob) opt in Meson App success!\n")
-
-
-//     console.log("\n================== 2.2 LP deposit to App ==================")
-//     await submit_transaction_group(bob.sk, [
-//         makeApplicationCallTxnFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['deposit', lp_deposit_amount]),
-//             foreignAssets: [usdc_index]
-//         }),
-//         makeAssetTransferTxnWithSuggestedParamsFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             to: meson_address,
-//             amount: lp_deposit_amount,
-//             assetIndex: usdc_index,
-//         })
-//     ],)
-//     console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} mUSDC into Meson App!\n`)
-
-//     await submit_transaction_group(bob.sk, [
-//         makeApplicationCallTxnFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['deposit', lp_deposit_amount]),
-//             foreignAssets: [usdt_index]
-//         }),
-//         makeAssetTransferTxnWithSuggestedParamsFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             to: meson_address,
-//             amount: lp_deposit_amount,
-//             assetIndex: usdt_index,
-//         })
-//     ],)
-//     console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} mUSDT into Meson App!`)
-//     console.log("[TODO] Cannot use indexer to see local state correctly!\n")
+    console.log("\n================== 1.3 Transfer USDC and USDT to LP and User ==================")
+    console.log(`This step is finished in sui console.\n`)
 
 
 
 
-//     // --------------------------------------------------------------------------------------------
-//     console.log("\n# 3 Swap! #")
-
-//     console.log("================== 3.0 Init ==================")
-
-//     // let meson_index = 162573802                                 // if needed
-//     // let meson_address = getApplicationAddress(meson_index)      // if needed
-
-//     const amount_swap = 3 * 1_000_000
-//     const encoded_hexstring = build_encoded(amount_swap, get_expire_ts(), '02', '01', false)
-//     const encoded_bytes = Buffer.from(encoded_hexstring, 'hex')
-//     console.log(`EncodedSwap: ${encoded_hexstring}`)
+    // --------------------------------------------------------------------------------------------
+    console.log("\n# 2 LP deposit #")
 
 
-//     console.log("\n\n================== 3.1 PostSwap & BondSwap ==================")
+    console.log("\n================== 2.1 Find LP objects (USDC, USDT) ==================")
+    let usdcObjects = (await provider.getAllCoins({
+        owner: bob_address
+    })).data.filter(x => x.coinType == `${utils.usdc_module}::USDC`)
+    for (var element of usdcObjects) console.log((await provider.getObject({ id: element.coinObjectId })).data)
+    console.log('========== LP USDC Object listed above. ==========\n')
+    let usdtObjects = (await provider.getAllCoins({
+        owner: bob_address
+    })).data.filter(x => x.coinType == `${utils.usdt_module}::USDT`)
+    for (var element of usdtObjects) console.log((await provider.getObject({ id: element.coinObjectId })).data)
+    console.log('========== LP USDT Object listed above. ==========\n')
 
-//     let [r, s, v] = sign_request(encoded_hexstring)
-//     console.log("Complete request signing!")
+    let lp_usdc_object = usdcObjects[0].coinObjectId
+    let lp_usdt_object = usdtObjects[0].coinObjectId
+
+
+    console.log("\n================== 2.2 LP deposit (and register) to Meson ==================")
+
+    // txn = new TransactionBlock()
+    // txn.moveCall({
+    //     target: `${utils.pools}::depositAndRegister`,
+    //     typeArguments: [
+    //         `${utils.usdc_module}::USDC`,
+    //     ],
+    //     arguments: [
+    //         txn.pure(lp_deposit_amount),
+    //         txn.pure(155),          // A random pool index
+    //         txn.object(lp_usdc_object),
+    //         txn.object(utils.object_ids.GeneralStore),
+    //         txn.object(StoreUSDC),
+    //     ],
+    // })
+    // txn.setGasBudget(gas_budget)
+    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    // console.log(txn_result)
+    // console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} USDC into Meson Pools!\n`)
+
+    // txn = new TransactionBlock()
+    // txn.moveCall({
+    //     target: `${utils.pools}::depositAndRegister`,
+    //     typeArguments: [
+    //         `${utils.usdt_module}::USDT`,
+    //     ],
+    //     arguments: [
+    //         txn.pure(lp_deposit_amount),
+    //         txn.pure(155),          // A random pool index
+    //         txn.object(lp_usdt_object),
+    //         txn.object(utils.object_ids.GeneralStore),
+    //         txn.object(StoreUSDT),
+    //     ],
+    // })
+    // txn.setGasBudget(gas_budget)
+    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    // console.log(txn_result)
+    // console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
+
+
+
+
+    // --------------------------------------------------------------------------------------------
+    console.log("\n# 3 Swap! #")
+
+    console.log("================== 3.0 Init, Find User objects (USDC, USDT) ==================")
+
+    const amount_swap = 35 * 1_000_000
+    const encoded_hexstring = build_encoded(amount_swap, get_expire_ts(), '02', '01', false)
+    const encoded_bytes = Buffer.from(encoded_hexstring, 'hex')
+    console.log(`EncodedSwap: ${encoded_hexstring}`)
+
+    usdcObjects = (await provider.getAllCoins({
+        owner: carol_address
+    })).data.filter(x => x.coinType == `${utils.usdc_module}::USDC`)
+    for (var element of usdcObjects) console.log((await provider.getObject({ id: element.coinObjectId })).data)
+    console.log('========== LP USDC Object listed above. ==========\n')
+    usdtObjects = (await provider.getAllCoins({
+        owner: carol_address
+    })).data.filter(x => x.coinType == `${utils.usdt_module}::USDT`)
+    for (var element of usdtObjects) console.log((await provider.getObject({ id: element.coinObjectId })).data)
+    console.log('========== LP USDT Object listed above. ==========\n')
+
+    let user_usdc_object = usdcObjects[0].coinObjectId
+    let user_usdt_object = usdtObjects[0].coinObjectId
+
+    console.log("\n\n================== 3.1 PostSwap & BondSwap ==================")
+
+    let [r, s, v] = sign_request(encoded_hexstring)
+    console.log("Complete request signing!")
 
 //     let postSwap_group = [
 //         makeApplicationCallTxnFromObject({
