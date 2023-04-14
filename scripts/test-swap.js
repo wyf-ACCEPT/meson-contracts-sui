@@ -223,9 +223,8 @@ main = async () => {
     const utils = new Utils()
     await utils.show_account_info()
 
-    const transfer_to_app_amount = 400_000
-    const lp_deposit_amount = 1_000_000 * 1_000_000     // $1M
-    const gas_budget = 999999999
+    const lp_deposit_amount = 1_000 * 1_000_000     // $1k to deposit
+    const gas_budget = 299999999
     let txn_result, txn
 
 //     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
@@ -312,7 +311,6 @@ main = async () => {
 
 
     console.log("\n================== 2.2 LP deposit (and register) to Meson ==================")
-
     // txn = new TransactionBlock()
     // txn.moveCall({
     //     target: `${utils.pools}::depositAndRegister`,
@@ -330,17 +328,17 @@ main = async () => {
     // txn.setGasBudget(gas_budget)
     // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
     // console.log(txn_result)
-    // console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} USDC into Meson Pools!\n`)
+    console.log(`LP(Bob) registers a new pool and deposits ${lp_deposit_amount / 1e6} USDC into Meson Pools!\n`)
 
     // txn = new TransactionBlock()
     // txn.moveCall({
-    //     target: `${utils.pools}::depositAndRegister`,
+    //     target: `${utils.pools}::deposit`,
     //     typeArguments: [
     //         `${utils.usdt_module}::USDT`,
     //     ],
     //     arguments: [
     //         txn.pure(lp_deposit_amount),
-    //         txn.pure(155),          // A random pool index
+    //         txn.pure(155),
     //         txn.object(lp_usdt_object),
     //         txn.object(utils.object_ids.GeneralStore),
     //         txn.object(StoreUSDT),
@@ -349,7 +347,7 @@ main = async () => {
     // txn.setGasBudget(gas_budget)
     // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
     // console.log(txn_result)
-    // console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
+    console.log(`LP(Bob) deposits ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
 
 
 
@@ -361,27 +359,47 @@ main = async () => {
 
     const amount_swap = 35 * 1_000_000
     const encoded_hexstring = build_encoded(amount_swap, get_expire_ts(), '02', '01', false)
-    const encoded_bytes = Buffer.from(encoded_hexstring, 'hex')
     console.log(`EncodedSwap: ${encoded_hexstring}`)
 
     usdcObjects = (await provider.getAllCoins({
         owner: carol_address
     })).data.filter(x => x.coinType == `${utils.usdc_module}::USDC`)
     for (var element of usdcObjects) console.log((await provider.getObject({ id: element.coinObjectId })).data)
-    console.log('========== LP USDC Object listed above. ==========\n')
+    console.log('========== User USDC Object listed above. ==========\n')
     usdtObjects = (await provider.getAllCoins({
         owner: carol_address
     })).data.filter(x => x.coinType == `${utils.usdt_module}::USDT`)
     for (var element of usdtObjects) console.log((await provider.getObject({ id: element.coinObjectId })).data)
-    console.log('========== LP USDT Object listed above. ==========\n')
+    console.log('========== User USDT Object listed above. ==========\n')
 
     let user_usdc_object = usdcObjects[0].coinObjectId
     let user_usdt_object = usdtObjects[0].coinObjectId
+
 
     console.log("\n\n================== 3.1 PostSwap & BondSwap ==================")
 
     let [r, s, v] = sign_request(encoded_hexstring)
     console.log("Complete request signing!")
+
+    // txn = new TransactionBlock()
+    // txn.moveCall({
+    //     target: `${utils.swap}::postSwap`,
+    //     typeArguments: [
+    //         `${utils.usdt_module}::USDT`,
+    //     ],
+    //     arguments: [
+    //         txn.pure(add_length_to_hexstr(encoded_hexstring)),
+    // //         txn.pure(lp_deposit_amount),
+    // //         txn.pure(155),          // A random pool index
+    // //         txn.object(lp_usdt_object),
+    // //         txn.object(utils.object_ids.GeneralStore),
+    // //         txn.object(StoreUSDT),
+    //     ],
+    // })
+    // txn.setGasBudget(gas_budget)
+    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    // console.log(txn_result)
+    // console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
 
 //     let postSwap_group = [
 //         makeApplicationCallTxnFromObject({
