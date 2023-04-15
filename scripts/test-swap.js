@@ -266,7 +266,7 @@ main = async () => {
     // console.log('========== Meson add USDC success! ==========')
 
     // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDC = '0xe319b0f9a498090bb1c6ff2e3fb47fbec11e4341d74e666a7d95e1fa3ee2bfa1'
+    const StoreUSDC = '0x986bb2e458265d56b94af2ada586184c82fcfbcfffd0d41c31ec6e88b772ca59'
 
     
     // const txnAddUSDT = new TransactionBlock()
@@ -277,7 +277,7 @@ main = async () => {
     //     ],
     //     arguments: [
     //         txnAddUSDT.pure(utils.object_ids.AdminCap),
-    //         txnAddUSDT.pure(1),
+    //         txnAddUSDT.pure(2),
     //         txnAddUSDT.pure(utils.object_ids.GeneralStore),
     //     ]
     // })
@@ -287,7 +287,7 @@ main = async () => {
     // console.log('========== Meson add USDT success! ==========\n')
 
     // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDT = '0x6f3378cac9813f20693281f09cc9faa8b90b82e33a382d92a5f6afeb82c840f2'
+    const StoreUSDT = '0x0c4650c6b9ff31bbf9e19466a5fba214df2c591edd27417e8538712f9a9c2c8b'
 
 
     console.log("\n================== 1.3 Transfer USDC and USDT to LP and User ==================")
@@ -363,7 +363,7 @@ main = async () => {
 
     console.log("================== 3.0 Init, Find User objects (USDC, USDT) ==================")
 
-    const amount_swap = 35 * 1_000_000
+    const amount_swap = 17 * 1_000_000
     const encoded_hexstring = build_encoded(amount_swap, get_expire_ts(), '02', '01', false)
     console.log(`EncodedSwap: ${encoded_hexstring}`)
 
@@ -387,70 +387,45 @@ main = async () => {
     sig = sign_request(encoded_hexstring)
     console.log("Complete request signing!")
 
-    // txn = new TransactionBlock()
-    // txn.moveCall({
-    //     target: `${utils.swap}::postSwap`,
-    //     typeArguments: [
-    //         `${utils.usdt_module}::USDT`,
-    //     ],
-    //     arguments: [
-    //         txn.pure(add_length_to_hexstr(encoded_hexstring)),
-    // //         txn.pure(lp_deposit_amount),
-    // //         txn.pure(155),          // A random pool index
-    // //         txn.object(lp_usdt_object),
-    // //         txn.object(utils.object_ids.GeneralStore),
-    // //         txn.object(StoreUSDT),
-    //     ],
-    // })
-    // txn.setGasBudget(gas_budget)
-    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
-    // console.log(txn_result)
-    // console.log(`LP(Bob) deposit ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
+    txn = new TransactionBlock()
+    txn.moveCall({
+        target: `${utils.swap}::postSwap`,
+        typeArguments: [
+            `${utils.usdc_module}::USDC`,
+        ],
+        arguments: [
+            txn.pure(add_length_to_hexstr(encoded_hexstring)),
+            txn.pure(add_length_to_hexstr(sig)),
+            txn.pure(add_length_to_hexstr(utils.initiator_address)),
+            txn.pure(155),
+            txn.object(user_usdc_object),
+            txn.object('0x6'),
+            txn.object(utils.object_ids.GeneralStore),
+            txn.object(StoreUSDC),
+        ],
+    })
+    txn.setGasBudget(gas_budget)
+    txn_result = await carol.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    console.log(txn_result)
+    console.log("Step 1.1. User(Carol) posted swap success!\n")
 
-//     let postSwap_group = [
-//         makeApplicationCallTxnFromObject({
-//             from: carol.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['postSwap', encoded_bytes, r, s, v, initiator_buffer]),
-//             boxes: [{
-//                 appIndex: meson_index,
-//                 name: new Uint8Array(encoded_bytes),
-//             }],
-//         }),
-//         makeAssetTransferTxnWithSuggestedParamsFromObject({
-//             from: carol.addr,
-//             suggestedParams: await sp_func(),
-//             to: meson_address,
-//             amount: amount_swap,
-//             assetIndex: usdc_index,
-//         }),
-//     ]
-//     for (let pad_index = 0; pad_index < 7; pad_index++)
-//         postSwap_group.push(makeApplicationCallTxnFromObject({
-//             from: carol.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['padding', pad_index]),
-//         }))
-//     await submit_transaction_group(carol.sk, postSwap_group)
-//     console.log("Step 1.1. User(Carol) posted swap success!\n")
 
-//     await submit_transaction(bob.sk, makeApplicationCallTxnFromObject({
-//         from: bob.addr,
-//         suggestedParams: await sp_func(),
-//         appIndex: meson_index,
-//         onComplete: on_complete_param,
-//         appArgs: listToUint8ArrayList(['bondSwap', encoded_bytes]),
-//         boxes: [{
-//             appIndex: meson_index,
-//             name: new Uint8Array(encoded_bytes),
-//         }],
-//     }))
-//     console.log("Step 1.2. LP(Bob) Bonded swap success!\n")
-//     await show_boxes(meson_index, true)
+    txn = new TransactionBlock()
+    txn.moveCall({
+        target: `${utils.swap}::bondSwap`,
+        typeArguments: [
+            `${utils.usdc_module}::USDC`,
+        ],
+        arguments: [
+            txn.pure(add_length_to_hexstr(encoded_hexstring)),
+            txn.pure(155),
+            txn.object(utils.object_ids.GeneralStore),
+        ],
+    })
+    txn.setGasBudget(gas_budget)
+    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    console.log(txn_result)
+    console.log("Step 1.2. LP(Bob) Bonded swap success!\n")
 
 
 //     console.log("\n\n================== 3.2 Lock ==================")
