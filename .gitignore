@@ -6,4 +6,3 @@ node_modules
 wallet-*
 build
 sui.log.*
-Steps.sh

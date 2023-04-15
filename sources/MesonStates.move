@@ -223,7 +223,8 @@ module Meson::MesonStates {
         pool_index: u64,
         storeG: &mut GeneralStore,
     ) {
-        let posted = table::borrow_mut(&mut storeG.posted_swaps, encoded_swap);
+        let posted_swaps = &mut storeG.posted_swaps;
+        let posted = table::borrow_mut(posted_swaps, encoded_swap);
         assert!(posted.from_address != @0x0, ESWAP_NOT_EXISTS);
         assert!(posted.pool_index == 0, ESWAP_BONDED_TO_OTHERS);
         posted.pool_index = pool_index;
@@ -234,7 +235,6 @@ module Meson::MesonStates {
         clock_object: &Clock,       // The `Clock` object ID is `0x6`
         storeG: &mut GeneralStore,
     ): (u64, vector<u8>, address)  {
-        
         let posted_swaps = &mut storeG.posted_swaps;
         // TODO: do we need to check contains?
         assert!(table::contains(posted_swaps, encoded_swap), ESWAP_NOT_EXISTS);

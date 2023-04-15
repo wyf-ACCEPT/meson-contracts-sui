@@ -235,6 +235,9 @@ main = async () => {
 
 //     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
     const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request } = utils
+    console.log("LP's coin object:")
+    console.log(`USDC: ${utils.object_ids.ObjectUSDC}`)
+    console.log(`USDT: ${utils.object_ids.ObjectUSDT}\n`)
 
 
 
@@ -266,7 +269,7 @@ main = async () => {
     // console.log('========== Meson add USDC success! ==========')
 
     // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDC = '0x986bb2e458265d56b94af2ada586184c82fcfbcfffd0d41c31ec6e88b772ca59'
+    const StoreUSDC = '0x4ed2abc268c54be3112ea2028d4e3ec689438176be9e03e0339c82dc0ead42c1'
 
     
     // const txnAddUSDT = new TransactionBlock()
@@ -287,7 +290,7 @@ main = async () => {
     // console.log('========== Meson add USDT success! ==========\n')
 
     // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDT = '0x0c4650c6b9ff31bbf9e19466a5fba214df2c591edd27417e8538712f9a9c2c8b'
+    const StoreUSDT = '0xb1d2bd988b063a2ca2c764550f593427f18b9dab85991dc3d23e1d4446333f85'
 
 
     console.log("\n================== 1.3 Transfer USDC and USDT to LP and User ==================")
@@ -357,16 +360,16 @@ main = async () => {
 
 
 
-
     // --------------------------------------------------------------------------------------------
     console.log("\n# 3 Swap! #")
+
 
     console.log("================== 3.0 Init, Find User objects (USDC, USDT) ==================")
 
     const amount_swap = 17 * 1_000_000
     const encoded_hexstring = build_encoded(amount_swap, get_expire_ts(), '02', '01', false)
     console.log(`EncodedSwap: ${encoded_hexstring}`)
-
+    
     usdcObjects = (await provider.getAllCoins({
         owner: carol_address
     })).data.filter(x => x.coinType == `${utils.usdc_module}::USDC`)
@@ -407,25 +410,25 @@ main = async () => {
     txn.setGasBudget(gas_budget)
     txn_result = await carol.signAndExecuteTransactionBlock({ transactionBlock: txn })
     console.log(txn_result)
-    console.log("Step 1.1. User(Carol) posted swap success!\n")
+    console.log("Step 1.1. User(Carol) signed posted swap success, called by LP(Bob)!\n")
 
 
-    txn = new TransactionBlock()
-    txn.moveCall({
-        target: `${utils.swap}::bondSwap`,
-        typeArguments: [
-            `${utils.usdc_module}::USDC`,
-        ],
-        arguments: [
-            txn.pure(add_length_to_hexstr(encoded_hexstring)),
-            txn.pure(155),
-            txn.object(utils.object_ids.GeneralStore),
-        ],
-    })
-    txn.setGasBudget(gas_budget)
-    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
-    console.log(txn_result)
-    console.log("Step 1.2. LP(Bob) Bonded swap success!\n")
+    // txn = new TransactionBlock()
+    // txn.moveCall({
+    //     target: `${utils.swap}::bondSwap`,
+    //     typeArguments: [
+    //         `${utils.usdc_module}::USDC`,
+    //     ],
+    //     arguments: [
+    //         txn.pure(add_length_to_hexstr(encoded_hexstring)),
+    //         txn.pure(155),
+    //         txn.object(utils.object_ids.GeneralStore),
+    //     ],
+    // })
+    // txn.setGasBudget(gas_budget)
+    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    // console.log(txn_result)
+    // console.log("Step 1.2. LP(Bob) Bonded swap success!\n")      // Execute failed?
 
 
 //     console.log("\n\n================== 3.2 Lock ==================")
