@@ -153,9 +153,8 @@ class Utils {
         return r.toString('hex') + s.toString('hex')
     }
 
-    sign_release(encoded_hexstring, recipient_algo_addr) {
-        let recipient_addr = this.decode_algorand_address(recipient_algo_addr)
-        let content_hash = keccak256(Buffer.from(encoded_hexstring + recipient_addr, 'hex')).slice(2)
+    sign_release(encoded_hexstring, recipient_addr) {
+        let content_hash = keccak256(Buffer.from(encoded_hexstring + recipient_addr.slice(2), 'hex')).slice(2)
         let digest_release = Buffer.from(keccak256(
             Buffer.from(this.release_typehash + content_hash, 'hex')
         ).slice(2), 'hex')
@@ -234,7 +233,7 @@ main = async () => {
     let txn_result, txn, sig
 
 //     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
-    const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request } = utils
+    const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request, sign_release } = utils
     console.log("LP's coin object:")
     console.log(`USDC: ${utils.object_ids.ObjectUSDC}`)
     console.log(`USDT: ${utils.object_ids.ObjectUSDT}\n`)
@@ -409,8 +408,8 @@ main = async () => {
     })
     txn.setGasBudget(gas_budget)
     txn_result = await carol.signAndExecuteTransactionBlock({ transactionBlock: txn })
-    console.log(txn_result)
-    console.log("Step 1.1. User(Carol) signed posted swap success, called by LP(Bob)!\n")
+    console.log(txn_result)  // For the mutable Coin Object, signer needs to be User(Carol).
+    console.log("Step 1.1. User(Carol) signed posted swap successfully!\n")
 
 
     // txn = new TransactionBlock()
@@ -431,95 +430,78 @@ main = async () => {
     // console.log("Step 1.2. LP(Bob) Bonded swap success!\n")      // Execute failed?
 
 
-//     console.log("\n\n================== 3.2 Lock ==================")
+    console.log("\n\n================== 3.2 Lock ==================")
 
-//     let lock_group = [
-//         makeApplicationCallTxnFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['lock', encoded_bytes, r, s, v, initiator_buffer]),
-//             accounts: [carol.addr],
-//             boxes: [{
-//                 appIndex: meson_index,
-//                 name: new Uint8Array(get_swapID(encoded_hexstring, initiator_address)),
-//             }],
-//         }),
-//     ]
-//     for (let pad_index = 0; pad_index < 8; pad_index++)
-//         lock_group.push(makeApplicationCallTxnFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['padding', pad_index]),
-//         }))
-//     await submit_transaction_group(bob.sk, lock_group)
-//     console.log("Step 2. LP(Bob) lock assets success!\n")
-//     await show_boxes(meson_index, false)
+    txn = new TransactionBlock()
+    txn.moveCall({
+        target: `${utils.pools}::lock`,
+        typeArguments: [
+            `${utils.usdt_module}::USDT`,
+        ],
+        arguments: [
+            txn.pure(add_length_to_hexstr(encoded_hexstring)),
+            txn.pure(add_length_to_hexstr(sig)),
+            txn.pure(add_length_to_hexstr(utils.initiator_address)),
+            txn.pure(carol_address),
+            txn.object(utils.object_ids.GeneralStore),
+            txn.object(StoreUSDT),
+            txn.object('0x6'),
+        ],
+    })
+    txn.setGasBudget(gas_budget)
+    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    console.log(txn_result)
+    console.log("Step 2. LP(Bob) lock assets successfully!\n")
 
 
-//     console.log("\n\n================== 3.3 Release ==================")
+    console.log("\n\n================== 3.3 Release ==================")
 
-//     let [r2, s2, v2] = sign_release(encoded_hexstring, carol.addr)
-//     console.log("Complete release signing!")
+    sig = sign_release(encoded_hexstring, carol_address)
+    console.log("Complete release signing!")
 
-//     let release_group = [
-//         makeApplicationCallTxnFromObject({
-//             from: carol.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['release', encoded_bytes, r2, s2, v2, initiator_buffer]),
-//             foreignAssets: [usdt_index],
-//             boxes: [{
-//                 appIndex: meson_index,
-//                 name: new Uint8Array(get_swapID(encoded_hexstring, initiator_address)),
-//             }],
-//         }),
-//     ]
-//     for (let pad_index = 0; pad_index < 8; pad_index++)
-//         release_group.push(makeApplicationCallTxnFromObject({
-//             from: carol.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['padding', pad_index]),
-//         }))
-//     await submit_transaction_group(carol.sk, release_group)
-//     console.log("Step 3. User(Carol) release assets success!\n")
-//     await show_boxes(meson_index, false)
+    txn = new TransactionBlock()
+    txn.moveCall({
+        target: `${utils.pools}::release`,
+        typeArguments: [
+            `${utils.usdt_module}::USDT`,
+        ],
+        arguments: [
+            txn.pure(add_length_to_hexstr(encoded_hexstring)),
+            txn.pure(add_length_to_hexstr(sig)),
+            txn.pure(add_length_to_hexstr(utils.initiator_address)),
+            txn.object(utils.object_ids.GeneralStore),
+            txn.object(StoreUSDT),
+            txn.object('0x6'),
+        ],
+    })
+    txn.setGasBudget(gas_budget)
+    txn_result = await alice.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    console.log(txn_result) // For fee waived swap, signer needs to be the premium Manager(Alice).
+    console.log("Step 3. User(Carol) release assets successfully, called by Manager(Alice)!\n")
 
 
-//     console.log("\n\n================== 3.4 ExecuteSwap ==================")
+    console.log("\n\n================== 3.4 ExecuteSwap ==================")
 
-//     let executeSwap_group = [
-//         makeApplicationCallTxnFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['executeSwap', encoded_bytes, r2, s2, v2, 1]),
-//             accounts: [carol.addr],
-//             foreignAssets: [usdc_index],
-//             boxes: [{
-//                 appIndex: meson_index,
-//                 name: new Uint8Array(encoded_bytes),
-//             }],
-//         }),
-//     ]
-//     for (let pad_index = 0; pad_index < 7; pad_index++)
-//         executeSwap_group.push(makeApplicationCallTxnFromObject({
-//             from: bob.addr,
-//             suggestedParams: await sp_func(),
-//             appIndex: meson_index,
-//             onComplete: on_complete_param,
-//             appArgs: listToUint8ArrayList(['padding', pad_index]),
-//         }))
-//     await submit_transaction_group(bob.sk, executeSwap_group)
-//     console.log("Step 4. LP(Bob) executeSwap success!\n")
-//     await show_boxes(meson_index, true)
+    txn = new TransactionBlock()
+    txn.moveCall({
+        target: `${utils.swap}::executeSwap`,
+        typeArguments: [
+            `${utils.usdc_module}::USDC`,
+        ],
+        arguments: [
+            txn.pure(add_length_to_hexstr(encoded_hexstring)),
+            txn.pure(add_length_to_hexstr(sig)),
+            txn.pure(carol_address),
+            txn.pure(true),
+            txn.object(utils.object_ids.GeneralStore),
+            txn.object(StoreUSDC),
+            txn.object('0x6'),
+        ],
+    })
+    txn.setGasBudget(gas_budget)
+    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    console.log(txn_result)
+    console.log("Step 4. LP(Bob) executeSwap success!\n")
 
 }
 
