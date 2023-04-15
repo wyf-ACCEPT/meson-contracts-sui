@@ -147,7 +147,10 @@ class Utils {
             Buffer.from(this.request_typehash + content_hash, 'hex')
         ).slice(2), 'hex')
         let sig = this.initiator_wallet.signingKey.sign(digest_request)
-        return [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
+        // return [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
+        let [r, s, v] = [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
+        s[0] += v*128
+        return r.toString('hex') + s.toString('hex')
     }
 
     sign_release(encoded_hexstring, recipient_algo_addr) {
@@ -157,7 +160,10 @@ class Utils {
             Buffer.from(this.release_typehash + content_hash, 'hex')
         ).slice(2), 'hex')
         let sig = this.initiator_wallet.signingKey.sign(digest_release)
-        return [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
+        // return [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
+        let [r, s, v] = [Buffer.from(sig.r.slice(2), 'hex'), Buffer.from(sig.s.slice(2), 'hex'), sig.v - 27]
+        s[0] += v*128
+        return r.toString('hex') + s.toString('hex')
     }
 
     async show_account_info() {
@@ -225,7 +231,7 @@ main = async () => {
 
     const lp_deposit_amount = 1_000 * 1_000_000     // $1k to deposit
     const gas_budget = 299999999
-    let txn_result, txn
+    let txn_result, txn, sig
 
 //     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
     const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request } = utils
@@ -260,7 +266,7 @@ main = async () => {
     // console.log('========== Meson add USDC success! ==========')
 
     // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDC = '0xa71ec4b2e9ed94efe8ba1f821550783a542a56380d46b77a472a403bd1b72698'
+    const StoreUSDC = '0xe319b0f9a498090bb1c6ff2e3fb47fbec11e4341d74e666a7d95e1fa3ee2bfa1'
 
     
     // const txnAddUSDT = new TransactionBlock()
@@ -281,7 +287,7 @@ main = async () => {
     // console.log('========== Meson add USDT success! ==========\n')
 
     // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDT = '0xc14a011959b45312ab86d4533cfec78802d24a76a4686b64287b3e1350791cd4'
+    const StoreUSDT = '0x6f3378cac9813f20693281f09cc9faa8b90b82e33a382d92a5f6afeb82c840f2'
 
 
     console.log("\n================== 1.3 Transfer USDC and USDT to LP and User ==================")
@@ -378,7 +384,7 @@ main = async () => {
 
     console.log("\n\n================== 3.1 PostSwap & BondSwap ==================")
 
-    let [r, s, v] = sign_request(encoded_hexstring)
+    sig = sign_request(encoded_hexstring)
     console.log("Complete request signing!")
 
     // txn = new TransactionBlock()
