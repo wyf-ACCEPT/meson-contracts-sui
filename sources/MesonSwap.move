@@ -105,7 +105,7 @@ module Meson::MesonSwap {
     public entry fun executeSwap<CoinType>(
         encoded_swap: vector<u8>,
         signature: vector<u8>,
-        recipient: address,
+        recipient: vector<u8>,
         deposit_to_pool: bool,
         storeG: &mut GeneralStore,
         storeC: &mut StoreForCoin<CoinType>,

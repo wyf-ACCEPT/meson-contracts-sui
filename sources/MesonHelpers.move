@@ -4,6 +4,7 @@ module Meson::MesonHelpers {
     use sui::bcs;
     use sui::ecdsa_k1;
     use sui::hash;
+    use std::debug;
 
     friend Meson::MesonStates;
     friend Meson::MesonSwap;
@@ -356,6 +357,14 @@ module Meson::MesonHelpers {
             signature
         );
         assert!(eth_addr == x"2eF8a51F8fF129DBb874A0efB021702F59C1b211", 1);
+    }
+
+    #[test]
+    fun test_to_eth_address() {
+        let addr: address = @0x0123456789abcdeffedcba987654321055667788;
+        debug::print(&addr);
+        let reci = eth_address_from_sui_address(addr);
+        debug::print(&reci);
     }
 
 }

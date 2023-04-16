@@ -29,16 +29,11 @@ class Utils {
     constructor() {
         // base requirements
         this.provider = new JsonRpcProvider(devnetConnection);
-//         this.usdc_index = 160363393
-//         this.usdt_index = 160363405
         this.request_typehash = '7b521e60f64ab56ff03ddfb26df49be54b20672b7acfffc1adeb256b554ccb25'
         this.release_typehash = 'd23291d9d999318ac3ed13f43ac8003d6fbd69a4b532aeec9ffad516010a208c'
         this.encoder = new TextEncoder()
 
-//         // bind functions
-//         this.listToUint8ArrayList = this.listToUint8ArrayList.bind(this)
-//         this.submit_transaction = this.submit_transaction.bind(this)
-//         this.submit_transaction_group = this.submit_transaction_group.bind(this)
+        // bind functions
         this.sign_request = this.sign_request.bind(this)
         this.sign_release = this.sign_release.bind(this)
 
@@ -80,27 +75,6 @@ class Utils {
         u8ar_pro.set(u8ar, 1)
         return u8ar_pro
     }
-
-//     intToUint8Array(num, bytes_length) {
-//         let buffer = new ArrayBuffer(bytes_length);
-//         let view = new DataView(buffer);
-//         for (let i = bytes_length - 1; i >= 0; i--) {
-//             view.setUint8(i, num & 0xff);
-//             num >>= 8;
-//         }
-//         return new Uint8Array(buffer);
-//     }
-
-//     listToUint8ArrayList(list) {
-//         let arraylist = []
-//         for (var obj of list) {
-//             if (typeof obj == 'number') arraylist.push(this.intToUint8Array(obj, 8))
-//             else if (typeof obj == 'string') arraylist.push(this.encoder.encode(obj))
-//             else if (Buffer.isBuffer(obj)) arraylist.push(new Uint8Array(obj))
-//             else throw new Error("Wrong type!")
-//         }
-//         return arraylist
-//     }
 
     get_expire_ts(delay = 90) {
         return Math.floor(Date.now() / 1e3 + 60 * delay)
@@ -154,7 +128,7 @@ class Utils {
     }
 
     sign_release(encoded_hexstring, recipient_addr) {
-        let content_hash = keccak256(Buffer.from(encoded_hexstring + recipient_addr.slice(2), 'hex')).slice(2)
+        let content_hash = keccak256(Buffer.from(encoded_hexstring + recipient_addr, 'hex')).slice(2)
         let digest_release = Buffer.from(keccak256(
             Buffer.from(this.release_typehash + content_hash, 'hex')
         ).slice(2), 'hex')
@@ -174,17 +148,6 @@ class Utils {
         info = await this.provider.getBalance({ owner: this.carol_address })
         console.log(`Carol ${this.carol_address} balance: ${info.totalBalance / 1e9} SUI`)
     }
-
-//     async submit_transaction(private_key, unsigned_txn) {
-//         let signed_txn = unsigned_txn.signTxn(private_key)
-//         let txId = unsigned_txn.txID().toString()
-//         await this.client.sendRawTransaction(signed_txn).do()
-//         console.log(`Signed transaction with txID: ${txId}`)
-//         let confirmedTxn = await waitForConfirmation(this.client, txId, 2)
-//         console.log(`Confirmed on round ${confirmedTxn["confirmed-round"]}!\n`)
-//         let response = await this.client.pendingTransactionInformation(txId).do()
-//         return response
-//     }
 
 //     async show_boxes(meson_index, is_in_chain) {
 //         if (is_in_chain == true) {
@@ -230,7 +193,7 @@ main = async () => {
 
     const lp_deposit_amount = 1_000 * 1_000_000     // $1k to deposit
     const gas_budget = 299999999
-    let txn_result, txn, sig
+    let txn_result, txn
 
 //     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
     const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request, sign_release } = utils
@@ -383,10 +346,12 @@ main = async () => {
     let user_usdc_object = usdcObjects[0].coinObjectId
     let user_usdt_object = usdtObjects[0].coinObjectId
 
+    const recipient_20 = utils.initiator_address.toLowerCase()
+    const recipient_32 = '0x' + recipient_20 + '000000000000000000000000'
 
     console.log("\n\n================== 3.1 PostSwap & BondSwap ==================")
 
-    sig = sign_request(encoded_hexstring)
+    let sig_req = sign_request(encoded_hexstring)
     console.log("Complete request signing!")
 
     txn = new TransactionBlock()
@@ -397,7 +362,7 @@ main = async () => {
         ],
         arguments: [
             txn.pure(add_length_to_hexstr(encoded_hexstring)),
-            txn.pure(add_length_to_hexstr(sig)),
+            txn.pure(add_length_to_hexstr(sig_req)),
             txn.pure(add_length_to_hexstr(utils.initiator_address)),
             txn.pure(155),
             txn.object(user_usdc_object),
@@ -440,9 +405,9 @@ main = async () => {
         ],
         arguments: [
             txn.pure(add_length_to_hexstr(encoded_hexstring)),
-            txn.pure(add_length_to_hexstr(sig)),
+            txn.pure(add_length_to_hexstr(sig_req)),
             txn.pure(add_length_to_hexstr(utils.initiator_address)),
-            txn.pure(carol_address),
+            txn.pure(recipient_32),
             txn.object(utils.object_ids.GeneralStore),
             txn.object(StoreUSDT),
             txn.object('0x6'),
@@ -456,7 +421,7 @@ main = async () => {
 
     console.log("\n\n================== 3.3 Release ==================")
 
-    sig = sign_release(encoded_hexstring, carol_address)
+    let sig_rel = sign_release(encoded_hexstring, recipient_20)
     console.log("Complete release signing!")
 
     txn = new TransactionBlock()
@@ -467,7 +432,7 @@ main = async () => {
         ],
         arguments: [
             txn.pure(add_length_to_hexstr(encoded_hexstring)),
-            txn.pure(add_length_to_hexstr(sig)),
+            txn.pure(add_length_to_hexstr(sig_rel)),
             txn.pure(add_length_to_hexstr(utils.initiator_address)),
             txn.object(utils.object_ids.GeneralStore),
             txn.object(StoreUSDT),
@@ -490,8 +455,8 @@ main = async () => {
         ],
         arguments: [
             txn.pure(add_length_to_hexstr(encoded_hexstring)),
-            txn.pure(add_length_to_hexstr(sig)),
-            txn.pure(carol_address),
+            txn.pure(add_length_to_hexstr(sig_rel)),
+            txn.pure(add_length_to_hexstr(recipient_20)),
             txn.pure(true),
             txn.object(utils.object_ids.GeneralStore),
             txn.object(StoreUSDC),
