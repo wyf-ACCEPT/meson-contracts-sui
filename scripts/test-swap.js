@@ -149,39 +149,6 @@ class Utils {
         console.log(`Carol ${this.carol_address} balance: ${info.totalBalance / 1e9} SUI`)
     }
 
-//     async show_boxes(meson_index, is_in_chain) {
-//         if (is_in_chain == true) {
-//             console.log("Meson App boxes (encodedSwap -> postedValue): ")
-//             let box_res = await this.client.getApplicationBoxes(meson_index).do()
-//             for (let box of box_res.boxes) {
-//                 let encoded_key = box.name
-//                 let posted_value = (await this.client.getApplicationBoxByName(meson_index, encoded_key).do()).value
-//                 if (posted_value.length == 84)
-//                     console.log(
-//                         `[EncodedSwap] %s, \n\t-> [PostedValue] (lp, initiator, from_address): \n\t\t\t(%s, \n\t\t\t%s, \n\t\t\t%s)`,
-//                         this.buffer_to_hex(encoded_key),
-//                         this.buffer_to_hex(posted_value.slice(0, 32)),
-//                         this.buffer_to_hex(posted_value.slice(32, 52)),
-//                         this.buffer_to_hex(posted_value.slice(52)),
-//                     )
-//             }
-//         } else {
-//             console.log("Meson App boxes (swapId -> lockedValue): ")
-//             let box_res = await this.client.getApplicationBoxes(meson_index).do()
-//             for (let box of box_res.boxes) {
-//                 let swapid_key = box.name
-//                 let locked_value = (await this.client.getApplicationBoxByName(meson_index, swapid_key).do()).value
-//                 if (locked_value.length == 69)
-//                     console.log(
-//                         `[SwapID] %s, \n\t-> [LockedValue] (lp, until, recipient): \n\t\t\t(%s, \n\t\t\t%s, \n\t\t\t%s)`,
-//                         this.buffer_to_hex(swapid_key),
-//                         this.buffer_to_hex(locked_value.slice(0, 32)),
-//                         this.hex_timestamp_to_date(this.buffer_to_hex(locked_value.slice(32, 37))),
-//                         this.buffer_to_hex(locked_value.slice(37)),
-//                     )
-//             }
-//         }
-//     }
 }
 
 
@@ -195,7 +162,6 @@ main = async () => {
     const gas_budget = 299999999
     let txn_result, txn
 
-//     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
     const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request, sign_release } = utils
     console.log("LP's coin object:")
     console.log(`USDC: ${utils.object_ids.ObjectUSDC}`)
@@ -349,6 +315,7 @@ main = async () => {
     const recipient_20 = utils.initiator_address.toLowerCase()
     const recipient_32 = '0x' + recipient_20 + '000000000000000000000000'
 
+    
     console.log("\n\n================== 3.1 PostSwap & BondSwap ==================")
 
     let sig_req = sign_request(encoded_hexstring)
