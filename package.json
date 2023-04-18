@@ -1,8 +1,23 @@
 {
+  "name": "meson-contracts-sui",
+  "version": "0.1.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "sui move build --skip-fetch-latest-git-deps",
+    "build:new": "node ./scripts/prepare_wallet.js && yarn build",
+    "test": "sui move test --skip-fetch-latest-git-deps",
+    "predeploy": "yarn build:new",
+    "deploy": "sui client --client.config .sui/config.yaml publish --gas-budget 999999999",
+    "postdeploy": "node ./scripts/initialize_contracts.js",
+    "register": "node ./scripts/register_coins.js",
+    "swap": "node ./scripts/swap.js"
+  },
   "dependencies": {
+    "@mesonfi/presets": "^1.8.0-beta.2",
+    "@mesonfi/sdk": "^1.8.0-beta.4",
     "@mysten/sui.js": "^0.32.1",
     "@scallop-dao/sui-kit": "^0.30.8",
     "dotenv": "^16.0.3",
-    "ethers": "^6.2.3"
+    "ethers": "^5.7.1"
   }
 }
