@@ -1,5 +1,4 @@
 module Meson::MesonStates {
-    /* ---------------------------- Constant variables ---------------------------- */
     use std::type_name::{Self, TypeName};
     use sui::table;
     use sui::transfer;
@@ -26,16 +25,12 @@ module Meson::MesonStates {
     const ESWAP_COIN_MISMATCH: u64 = 38;
     const ESWAP_BONDED_TO_OTHERS: u64 = 44;
 
-//     const DEPLOYER: address = @Meson;
     friend Meson::MesonSwap;
     friend Meson::MesonPools;
 
-
-
-    /* ---------------------------- Structures ---------------------------- */
     struct GeneralStore has key, store {
         id: UID,
-        supported_coins: table::Table<u8, TypeName>,     // coin_index => CoinType
+        supported_coins: table::Table<u8, TypeName>,                // coin_index => CoinType
         pool_owners: table::Table<u64, address>,                    // pool_index => owner_addr
         pool_of_authorized_addr: table::Table<address, u64>,        // authorized_addr => pool_index
         posted_swaps: table::Table<vector<u8>, PostedSwap>,         // encoded_swap => posted_swap
@@ -63,12 +58,9 @@ module Meson::MesonStates {
 
     struct AdminCap has key { id: UID }
 
-
-
-    /* ---------------------------- Admin functions ---------------------------- */
     fun init(ctx: &mut TxContext) {
-        let sender_addr = tx_context::sender(ctx);          // Notice: the sender is the `deployer`, different from which in Aptos
-        transfer::transfer(AdminCap { id: object::new(ctx) }, sender_addr);     // Transfer the admin capability to the creator
+        let sender_addr = tx_context::sender(ctx); // the sender is the `deployer`
+        transfer::transfer(AdminCap { id: object::new(ctx) }, sender_addr); // transfer the admin cap to the creator
 
         let store = GeneralStore {
             id: object::new(ctx),
@@ -78,10 +70,10 @@ module Meson::MesonStates {
             posted_swaps: table::new<vector<u8>, PostedSwap>(ctx),
             locked_swaps: table::new<vector<u8>, LockedSwap>(ctx),
         };
-        table::add(&mut store.pool_owners, 0, sender_addr);             // pool_index = 0 is premium_manager
-        transfer::share_object(store);          // Make the store values a share object
+        // pool_index = 0 is premium_manager
+        table::add(&mut store.pool_owners, 0, sender_addr);
+        transfer::share_object(store); // make the store values a share object
     }
-
 
     // Named consistently with solidity contracts
     public entry fun transferPremiumManager(
@@ -91,10 +83,11 @@ module Meson::MesonStates {
     ) {
         let pool_owners = &mut storeG.pool_owners;
         let old_premium_manager = table::remove(pool_owners, 0);
+
         assert!(tx_context::sender(ctx) == old_premium_manager, EUNAUTHORIZED);
+
         table::add(pool_owners, 0, new_premium_manager);
     }
-
 
     // Named consistently with solidity contracts
     public entry fun addSupportToken<CoinType>(
@@ -117,9 +110,6 @@ module Meson::MesonStates {
         transfer::share_object(coin_store);
     }
 
-
-
-    /* ---------------------------- Utils functions ---------------------------- */
     public(friend) fun coin_type_for_index(coin_index: u8, storeG: &GeneralStore): TypeName {
         *table::borrow(&storeG.supported_coins, coin_index)
     }
@@ -204,8 +194,6 @@ module Meson::MesonStates {
     }
 
 
-
-    /* ---------------------------- Swap-related functions ---------------------------- */
     public(friend) fun add_posted_swap(
         encoded_swap: vector<u8>,
         pool_index: u64,

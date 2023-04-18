@@ -1,8 +1,7 @@
-call-usdc.js
-starter.js
-try-sign.js
-algorand-meson-test.js
-node_modules
-wallet-*
+.DS_Store
 build
+node_modules
+*.log
+
 sui.log.*
+.sui
