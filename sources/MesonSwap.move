@@ -2,9 +2,7 @@
 /// @notice The class to receive and process swap requests on the initial chain side.
 /// Methods in this class will be executed by swap initiators or LPs
 /// on the initial chain of swaps.
-
 module Meson::MesonSwap {
-    /* ---------------------------- Constant variables ---------------------------- */
     use std::vector;
     use sui::transfer;
     use sui::coin::{Self, Coin};
@@ -15,12 +13,12 @@ module Meson::MesonSwap {
 
     const EPOOL_INDEX_CANNOT_BE_ZERO: u64 = 16;
     const EPOOL_INDEX_MISMATCH: u64 = 17;
+
     const ESWAP_EXPIRE_TOO_EARLY: u64 = 42;
     const ESWAP_EXPIRE_TOO_LATE: u64 = 43;
     const ESWAP_CANNOT_CANCEL_BEFORE_EXPIRE: u64 = 45;
 
 
-    /* ---------------------------- Main functions ---------------------------- */
     // Named consistently with solidity contracts
     /// `encoded_swap` in format of `version:uint8|amount:uint40|salt:uint80|fee:uint40|expire_ts:uint40|out_chain:uint16|out_coin:uint8|in_chain:uint16|in_coin:uint8`
     ///   version: Version of encoding
@@ -41,7 +39,7 @@ module Meson::MesonSwap {
         signature: vector<u8>, // must be signed by `initiator`
         initiator: vector<u8>, // an eth address of (20 bytes), the signer to sign for release
         pool_index: u64,
-        coin_from_sender: &mut Coin<CoinType>,
+        coin_from_sender: &mut Coin<CoinType>, // TODO: accept multiple coin objects of the same type?
         clock_object: &Clock,
         storeG: &mut GeneralStore,
         storeC: &mut StoreForCoin<CoinType>,

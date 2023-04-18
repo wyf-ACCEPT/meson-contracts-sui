@@ -1,10 +1,10 @@
+/// @title MesonHelpers
+/// @notice The class that provides helper functions for Meson protocol
 module Meson::MesonHelpers {
-    /* ---------------------------- Constant variables ---------------------------- */
     use std::vector;
     use sui::bcs;
-    use sui::ecdsa_k1;
     use sui::hash;
-    use std::debug;
+    use sui::ecdsa_k1;
 
     friend Meson::MesonStates;
     friend Meson::MesonSwap;
@@ -22,9 +22,7 @@ module Meson::MesonHelpers {
 
     const MESON_PROTOCOL_VERSION: u8 = 1;
 
-    const SHORT_COIN_TYPE: vector<u8> = x"0310"; 
-    // See https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-
+    const SHORT_COIN_TYPE: vector<u8> = x"0310"; // See https://github.com/satoshilabs/slips/blob/master/slip-0044.md
     const MAX_SWAP_AMOUNT: u64 = 100_000_000_000; // 100,000.000000 = 100k
 
     const MIN_BOND_TIME_PERIOD: u64 = 3600;     // 1 hour
@@ -44,8 +42,6 @@ module Meson::MesonHelpers {
     const RELEASE_TYPE_TRON: vector<u8> = b"bytes32 Sign to release a swap on Mesonaddress Recipient (tron address in hex format)";
 
 
-
-    /* ---------------------------- Utils functions ---------------------------- */
     public fun get_MIN_BOND_TIME_PERIOD(): u64 {
         MIN_BOND_TIME_PERIOD
     }
@@ -79,6 +75,15 @@ module Meson::MesonHelpers {
         let buf = copy encoded_swap;
         vector::append(&mut buf, initiator);
         hash::keccak256(&buf)
+    }
+
+    #[test]
+    public fun test_get_swap_id() {
+        let swap_id = get_swap_id(
+            x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21",
+            x"2ef8a51f8ff129dbb874a0efb021702f59c1b211"
+        );
+        assert!(swap_id == x"e3a84cd4912a01989c6cd24e41d3d94baf143242fbf1da26eb7eac08c347b638", 1);
     }
 
     // Functions to obtain values from encoded
@@ -196,8 +201,6 @@ module Meson::MesonHelpers {
     }
 
 
-
-    /* ---------------------------- Signature functions ---------------------------- */
     public(friend) fun check_request_signature(
         encoded_swap: vector<u8>,
         signature: vector<u8>,
@@ -218,10 +221,26 @@ module Meson::MesonHelpers {
             signing_data = hash::keccak256(&REQUEST_TYPE);
             vector::append(&mut signing_data, msg_hash);
         };
-        // let digest = hash::keccak256(&signing_data);
 
         let recovered = recover_eth_address(signing_data, signature);
         assert!(recovered == signer_eth_addr, EINVALID_SIGNATURE);
+    }
+
+    #[test]
+    fun test_check_request_signature() {
+        let encoded_swap = x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21";
+        let signature = x"b3184c257cf973069250eefd849a74d27250f8343cbda7615191149dd3c1b61d5d4e2b5ecc76a59baabf10a8d5d116edb95a5b2055b9b19f71524096975b29c2";
+        let eth_addr = x"2ef8a51f8ff129dbb874a0efb021702f59c1b211";
+        check_request_signature(encoded_swap, signature, eth_addr);
+    }
+
+    #[test]
+    #[expected_failure(abort_code=EINVALID_SIGNATURE)]
+    fun test_check_request_signature_error() {
+        let encoded_swap = x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21";
+        let signature = x"b3184c257cf973069250eefd849a74d27250f8343cbda7615191149dd3c1b61d5d4e2b5ecc76a59baabf10a8d5d116edb95a5b2055b9b19f71524096975b29c3";
+        let eth_addr = x"2ef8a51f8ff129dbb874a0efb021702f59c1b211";
+        check_request_signature(encoded_swap, signature, eth_addr);
     }
 
     public(friend) fun check_release_signature(
@@ -253,17 +272,24 @@ module Meson::MesonHelpers {
             };
             vector::append(&mut signing_data, msg_hash);
         };
-        // let digest = hash::keccak256(&signing_data);
 
         let recovered = recover_eth_address(signing_data, signature);
         assert!(recovered == signer_eth_addr, EINVALID_SIGNATURE);
     }
-        
+
+    #[test]
+    fun test_check_release_signature() {
+        let encoded_swap = x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21";
+        let recipient = x"01015ace920c716794445979be68d402d28b2805";
+        let signature = x"1205361aabc89e5b30592a2c95592ddc127050610efe92ff6455c5cfd43bdd825853edcf1fa72f10992b46721d17cb3191a85cefd2f8325b1ac59c7d498fa212";
+        let eth_addr = x"2ef8a51f8ff129dbb874a0efb021702f59c1b211";
+        check_release_signature(encoded_swap, recipient, signature, eth_addr);
+    }
+
     public(friend) fun is_eth_addr(addr: vector<u8>) {
         assert!(vector::length(&addr) == 20, EINVALID_ETH_ADDRESS);
     }
 
-    // Notice: Sui address is also 32-bytes length
     public(friend) fun eth_address_from_sui_address(addr: address): vector<u8> {
         let addr_bytes = bcs::to_bytes(&addr);
         let eth_addr = vector::empty<u8>();
@@ -289,65 +315,27 @@ module Meson::MesonHelpers {
         eth_addr
     }
 
-    // Notice: the input param must be the origin message, not digest.
-    public fun recover_eth_address(msg: vector<u8>, signature: vector<u8>): vector<u8> {
-        let signature_65bytes = copy signature;
-        let first_bit_of_s = vector::borrow_mut(&mut signature_65bytes, 32);
-        let recovery_id = *first_bit_of_s >> 7;
-        *first_bit_of_s = *first_bit_of_s & 0x7f;
-        vector::push_back(&mut signature_65bytes, recovery_id);
-
-        let compressed_pk = ecdsa_k1::secp256k1_ecrecover(&signature_65bytes, &msg, 0);     // 0 means `keccak256`
-        let pk = ecdsa_k1::decompress_pubkey(&compressed_pk);
-        vector::remove(&mut pk, 0);           // Notice: drop '04' prefix
-        eth_address_from_pubkey(pk)
-    }
-
-
-
-    /* ---------------------------- Tests ---------------------------- */
-    #[test]
-    public fun test_get_swap_id() {
-        let swap_id = get_swap_id(
-            x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21",
-            x"2ef8a51f8ff129dbb874a0efb021702f59c1b211"
-        );
-        assert!(swap_id == x"e3a84cd4912a01989c6cd24e41d3d94baf143242fbf1da26eb7eac08c347b638", 1);
-    }   
-    
-    #[test]
-    fun test_check_request_signature() {
-        let encoded_swap = x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21";
-        let signature = x"b3184c257cf973069250eefd849a74d27250f8343cbda7615191149dd3c1b61d5d4e2b5ecc76a59baabf10a8d5d116edb95a5b2055b9b19f71524096975b29c2";
-        let eth_addr = x"2ef8a51f8ff129dbb874a0efb021702f59c1b211";
-        check_request_signature(encoded_swap, signature, eth_addr);
-    }
-
-    #[test]
-    #[expected_failure(abort_code=EINVALID_SIGNATURE)]
-    fun test_check_request_signature_error() {
-        let encoded_swap = x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21";
-        let signature = x"b3184c257cf973069250eefd849a74d27250f8343cbda7615191149dd3c1b61d5d4e2b5ecc76a59baabf10a8d5d116edb95a5b2055b9b19f71524096975b29c3";
-        let eth_addr = x"2ef8a51f8ff129dbb874a0efb021702f59c1b211";
-        check_request_signature(encoded_swap, signature, eth_addr);
-    }
-
-    #[test]
-    fun test_check_release_signature() {
-        let encoded_swap = x"01001dcd6500c00000000000f677815c000000000000634dcb98027d0102ca21";
-        let recipient = x"01015ace920c716794445979be68d402d28b2805";
-        let signature = x"1205361aabc89e5b30592a2c95592ddc127050610efe92ff6455c5cfd43bdd825853edcf1fa72f10992b46721d17cb3191a85cefd2f8325b1ac59c7d498fa212";
-        let eth_addr = x"2ef8a51f8ff129dbb874a0efb021702f59c1b211";
-        check_release_signature(encoded_swap, recipient, signature, eth_addr);
-    }
-    
     #[test]
     fun test_eth_address_from_pubkey() {
         let pk = x"5139c6f948e38d3ffa36df836016aea08f37a940a91323f2a785d17be4353e382b488d0c543c505ec40046afbb2543ba6bb56ca4e26dc6abee13e9add6b7e189";
         let eth_addr = eth_address_from_pubkey(pk);
         assert!(eth_addr == x"052c7707093534035fc2ed60de35e11bebb6486b", 1);
     }
-    
+
+    public fun recover_eth_address(msg: vector<u8>, signature: vector<u8>): vector<u8> {
+        // EIP-2098: recovery_id is stored in first bit of sig.s
+        let signature_65 = copy signature;
+        let first_bit_of_s = vector::borrow_mut(&mut signature_65, 32);
+        let recovery_id = *first_bit_of_s >> 7;
+        *first_bit_of_s = *first_bit_of_s & 0x7f;
+        vector::push_back(&mut signature_65, recovery_id);
+
+        let compressed_pk = ecdsa_k1::secp256k1_ecrecover(&signature_65, &msg, 0); // 0 means `keccak256`
+        let pk = ecdsa_k1::decompress_pubkey(&compressed_pk);
+        vector::remove(&mut pk, 0); // drop '04' prefix
+        eth_address_from_pubkey(pk)
+    }
+
     #[test]
     fun test_recover_eth_address() {
         let message = b"stupid";
@@ -358,14 +346,5 @@ module Meson::MesonHelpers {
         );
         assert!(eth_addr == x"2eF8a51F8fF129DBb874A0efB021702F59C1b211", 1);
     }
-
-    #[test]
-    fun test_to_eth_address() {
-        let addr: address = @0x0123456789abcdeffedcba987654321055667788;
-        debug::print(&addr);
-        let reci = eth_address_from_sui_address(addr);
-        debug::print(&reci);
-    }
-
 }
 
