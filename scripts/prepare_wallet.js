@@ -11,6 +11,8 @@ const {
   SUI_NODE_URL,
   SUI_FAUCET_URL,
   PRIVATE_KEY,
+  SUI_LP_PRIVATE_KEY,
+  SUI_USER_PRIVATE_KEY
 } = process.env
 
 prepare()
@@ -19,14 +21,22 @@ async function prepare() {
   const connection = new Connection({ fullnode: SUI_NODE_URL, faucet: SUI_FAUCET_URL })
   const provider = new JsonRpcProvider(connection)
   const wallet = adaptors.getWallet(PRIVATE_KEY, provider)
+  const wallet_lp = adaptors.getWallet(SUI_LP_PRIVATE_KEY, provider)
+  const wallet_user = adaptors.getWallet(SUI_USER_PRIVATE_KEY, provider)
 
   console.log(`Address created: ${wallet.address}`)
 
   if (SUI_FAUCET_URL) {
-    await provider.requestSuiFromFaucet(wallet.address)
+    await provider.requestSuiFromFaucet(wallet_lp.address)
+    await provider.requestSuiFromFaucet(wallet_user.address)
+    // await provider.requestSuiFromFaucet(wallet.address)
   
-    const bal = await wallet.getBalance(wallet.address)
-    console.log(`Balance: ${utils.formatUnits(bal, 9)} SUI`)
+    const bal_admin = await wallet.getBalance(wallet.address)
+    const bal_lp = await wallet.getBalance(wallet_lp.address)
+    const bal_user = await wallet.getBalance(wallet_user.address)
+    console.log(`Admin Balance: ${utils.formatUnits(bal_admin, 9)} SUI`)
+    console.log(`LP    Balance: ${utils.formatUnits(bal_lp, 9)} SUI`)
+    console.log(`User  Balance: ${utils.formatUnits(bal_user, 9)} SUI`)
   }
 
 
