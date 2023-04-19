@@ -27,8 +27,6 @@ async function initialize(digest) {
   const connection = new Connection({ fullnode: SUI_NODE_URL })
   const provider = new JsonRpcProvider(connection)
   const wallet = adaptors.getWallet(privateKey, provider)
-  const wallet_lp = adaptors.getWallet(SUI_LP_PRIVATE_KEY, provider)
-  const wallet_user = adaptors.getWallet(SUI_USER_PRIVATE_KEY, provider)
 
   const deployTx = await wallet.client.getTransactionBlock({ digest, options: { showInput: true, showEffects: true, showObjectChanges: true } })
   console.log(deployTx)
@@ -71,17 +69,21 @@ async function initialize(digest) {
 
 
   const lp = adaptors.getWallet(SUI_LP_PRIVATE_KEY, provider)
-  const lpAddress = lp.address
+  const user = adaptors.getWallet(SUI_USER_PRIVATE_KEY, provider)
 
+  // const premiumRecipient = ''
   // const txBlock = new TransactionBlock()
   // const payload = {
-  //   function: `${mesonAddress}::MesonStates::transferPremiumManager`,
-  //   typeArguments: [],
-  //   arguments: [tx.pure()],
+  //   function: `0x2::transfer::transfer`,
+  //   typeArguments: [`${mesonAddress}::MesonStates::AdminCap`],
+  //   arguments: [
+  //     txBlock.object(objectID.adminCap),
+  //     txBlock.txn(premiumRecipient),
+  //   ],
   // }
   // txBlock.moveCall(payload)
   // const tx = await wallet.sendTransaction(txBlock)
-  // console.log(`transferPremiumManager: ${tx.hash}`)
+  // console.log(`TransferPremiumManager: ${tx.hash}`)
   // await tx.wait()
 
 
@@ -89,12 +91,12 @@ async function initialize(digest) {
     return
   }
 
-  let registered = false  // Register in meson
+  let registered = true  // Register in meson
   for (const coin of coins) {
     const coinType = `${mesonAddress}::${coin.symbol}::${coin.symbol}`
 
     if (use_testnet) {
-      for (const [lp_or_user_wallet, lp_or_user_dict] of [[wallet_lp, 'lpCoin'], [wallet_user, 'userCoin']]) {
+      for (const [lp_or_user_wallet, lp_or_user_str] of [[lp, 'lpCoin'], [user, 'userCoin']]) {
         const txBlock = new TransactionBlock()
         const payload = {
           target: '0x2::coin::mint_and_transfer',
@@ -107,31 +109,35 @@ async function initialize(digest) {
         }
         txBlock.moveCall(payload)
         const tx = await wallet.sendTransaction(txBlock)
-        console.log(`Transfer to ${lp_or_user_dict} (${coin.symbol}): ${tx.hash}`)
+        console.log(`Transfer to ${lp_or_user_str} (${coin.symbol}): ${tx.hash}`)
         await tx.wait()
 
         const digest = tx.hash
         const transferTokenTx = await wallet.client.getTransactionBlock({ digest, options: { showInput: true, showEffects: true, showObjectChanges: true } })
-        objectID[lp_or_user_dict][coin.symbol] = transferTokenTx.objectChanges.filter(obj => obj.type == 'created')[0].objectId
+        objectID[lp_or_user_str][coin.symbol] = transferTokenTx.objectChanges.filter(obj => obj.type == 'created')[0].objectId
       }
     }
 
-    // const tx2 = await wallet.sendTransaction({
-    //   function: `0x1::managed_coin::mint`,
-    //   type_arguments: [coinType],
-    //   arguments: [lpAddress, 1_000000_000000]
-    // })
-    // console.log(`mint (${coin.symbol}): ${tx2.hash}`)
-    // await tx2.wait()
+    const func = registered ? 'deposit' : 'depositAndRegister'
+    const txBlock = new TransactionBlock()
+    const payload = {
+      target: `${mesonAddress}::MesonPools::${func}`,
+      typeArguments: [coinType],
+      arguments: [
+        txBlock.pure(AMOUNT_TO_DEPOSIT),
+        txBlock.pure(155),    // A random pool index
+        txBlock.object(objectID.lpCoin[coin.symbol]),
+        txBlock.object(objectID.storeG),
+        txBlock.object(objectID.storeC[coin.symbol]),        
+      ]
+    }
+    txBlock.moveCall(payload)
+    const tx = await lp.sendTransaction(txBlock)
+    console.log(`${func} (${coin.symbol}): ${tx.hash}`)
+    await tx.wait()
 
-    // const func = registered ? 'deposit' : 'depositAndRegister'
-    // const tx3 = await lp.sendTransaction({
-    //   function: `${address}::MesonPools::${func}`,
-    //   type_arguments: [coinType],
-    //   arguments: [BigInt(AMOUNT_TO_DEPOSIT), 1],
-    // })
-    // console.log(`${func} (${coin.symbol}): ${tx3.hash}`)
-    // await tx3.wait()
-    // registered = true
+    const digest = tx.hash
+    const transferTokenTx = await wallet.client.getTransactionBlock({ digest, options: { showInput: true, showEffects: true, showObjectChanges: true } })
+    registered = true
   }
 }
