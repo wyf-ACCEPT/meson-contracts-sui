@@ -13,6 +13,7 @@
     "swap": "node ./scripts/swap.js"
   },
   "dependencies": {
+    "@mesonfi/contract-abis": "^1.7.0",
     "@mesonfi/presets": "^1.8.0-beta.2",
     "@mesonfi/sdk": "^1.8.0-beta.4",
     "@mysten/sui.js": "^0.32.1",
