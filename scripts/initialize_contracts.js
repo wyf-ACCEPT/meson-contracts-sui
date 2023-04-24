@@ -39,7 +39,6 @@ async function initialize() {
   }
   console.log('storeC', storeC)
 
-
   // const premiumRecipient = ''
   // const txBlock = new TransactionBlock()
   // const payload = {
@@ -55,14 +54,13 @@ async function initialize() {
   // console.log(`TransferPremiumManager: ${tx.hash}`)
   // await tx.wait()
 
-
   if (!AMOUNT_TO_DEPOSIT) {
     return
   }
 
   const lp = adaptors.getWallet(SUI_LP_PRIVATE_KEY, client)
 
-  let registered = false // Registered in meson
+  let registered = true // Registered in meson
   for (const coin of network.tokens) {
     console.log(`Depositing ${AMOUNT_TO_DEPOSIT} ${coin.symbol}...`)
 

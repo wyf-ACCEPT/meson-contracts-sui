@@ -1,5 +1,6 @@
 const dotenv = require('dotenv')
 const { adaptors } = require('@mesonfi/sdk')
+const { Connection, JsonRpcProvider } = require('@mysten/sui.js')
 const presets = require('@mesonfi/presets').default
 
 const use_testnet = true
@@ -7,11 +8,19 @@ const networkId = use_testnet ? 'sui-testnet' : 'sui'
 presets.useTestnet(use_testnet)
 
 dotenv.config()
+const {
+  SUI_NODE_URL,
+  SUI_FAUCET_URL,
+  DEPLOY_DIGEST,
+} = process.env
+
 module.exports = { get_metadata }
 
-get_metadata('95uWVLj131occtfUyZpATc3Nk4VYbJcScUkAkcFQX1Wr')
+get_metadata(DEPLOY_DIGEST)
 
 async function get_metadata(digest) {
+  const connection = new Connection({ fullnode: SUI_NODE_URL, faucet: SUI_FAUCET_URL })
+  const provider = new JsonRpcProvider(connection)
   const network = presets.getNetwork(networkId)
   const client = presets.createNetworkClient(networkId, [network.url])
   const wallet = adaptors.getWallet(undefined, client)
@@ -22,10 +31,15 @@ async function get_metadata(digest) {
   // console.log('mesonAddress', mesonAddress)
   
   const metadata = {
+    mesonAddress: mesonAddress,
     storeG: deployTx.changes.find(obj => obj.objectType == `${mesonAddress}::MesonStates::GeneralStore`)?.objectId,
     adminCap: deployTx.changes.find(obj => obj.objectType == `${mesonAddress}::MesonStates::AdminCap`)?.objectId,
     treasuryCap: {},
   }
+
+  metadata.storeG_content = (await provider.getObject({
+    id: metadata.storeG, options: { showContent: true }
+  })).data.content.fields
 
   const coins = deployTx.changes.filter(obj => obj.objectType?.startsWith('0x2::coin::TreasuryCap'))
     .map(obj => {

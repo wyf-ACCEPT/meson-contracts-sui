@@ -98,7 +98,7 @@ module Meson::MesonStates {
     ) {       // `&AdminCap` ensures the sender is the deployer
         let supported_coins = &mut storeG.supported_coins;
         if (table::contains(supported_coins, coin_index)) {
-            table::remove(supported_coins, coin_index);
+            table::remove(supported_coins, coin_index);     // [TODO] It's not proper to directly cover the original coin index.
         };
         table::add(supported_coins, coin_index, type_name::get<CoinType>());
 

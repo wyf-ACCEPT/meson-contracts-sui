@@ -11,6 +11,7 @@ const {
     SignedSwapRelease,
  } = require('@mesonfi/sdk')
 const { ERC20, Meson } = require('@mesonfi/contract-abis')
+const { get_metadata } = require('./get_metadata')
 
 dotenv.config()
 
@@ -19,10 +20,11 @@ const {
   SUI_FAUCET_URL,
   PRIVATE_KEY,
   SUI_LP_PRIVATE_KEY,
-  SUI_USER_PRIVATE_KEY
+  SUI_USER_PRIVATE_KEY,
+  DEPLOY_DIGEST,
 } = process.env
 
-swap('CDwr5yhwqRHpPQ17f4tuoYXG4585PB6pcVJ87HHwZ3Ce')
+swap(DEPLOY_DIGEST)
 
 async function swap(digest) {
   if (!SUI_LP_PRIVATE_KEY) {
@@ -42,15 +44,20 @@ async function swap(digest) {
   const deployTx = await wallet.client.getTransactionBlock({ digest, options: { showInput: true, showEffects: true, showObjectChanges: true } })
   console.log(deployTx)
 
-  const mesonAddress = deployTx.objectChanges.filter(obj => obj.type == 'published')[0].packageId
-  const objectID = {
-    storeG: deployTx.objectChanges.filter(obj => obj.objectType == `${mesonAddress}::MesonStates::GeneralStore`)[0].objectId,
-    adminCap: deployTx.objectChanges.filter(obj => obj.objectType == `${mesonAddress}::MesonStates::AdminCap`)[0].objectId,
-    storeC: { USDC: '0xa2631c90841d799df8eb3d3664a7b175cf959af8e764c1237f207ce838e5adf2' },
-    treasuryCap: {},
-    lpCoin: { USDC: '0xdea0ae4fe289ca0369b1e49d880ecf98bb06cbe15f492b33972001f7f73d6d90' },
-    userCoin: { USDC: '0xc991e596e610fac02842e510f5039344ef795d644efb803f74539845091fef9f' },
-  }
+  const metadata = { ...(await get_metadata(DEPLOY_DIGEST)), storeC: {
+    USDC: '0x009bc7a4d710535342c3549d6e74ca7313b7a92b99f42ffb87b3fe83efece30d',
+    USDT: '0xef41108ef7c8832bee9898dbecbd17d83e25e31d4985f646661e350b1f3afc86',
+  }} // Notice: rewrite this later
+  const { mesonAddress } = metadata
+  
+  // const metadata = {
+  //   storeG: deployTx.objectChanges.filter(obj => obj.objectType == `${mesonAddress}::MesonStates::GeneralStore`)[0].objectId,
+  //   adminCap: deployTx.objectChanges.filter(obj => obj.objectType == `${mesonAddress}::MesonStates::AdminCap`)[0].objectId,
+  //   storeC: { USDC: '0xa2631c90841d799df8eb3d3664a7b175cf959af8e764c1237f207ce838e5adf2' },
+  //   treasuryCap: {},
+  //   lpCoin: { USDC: '0xdea0ae4fe289ca0369b1e49d880ecf98bb06cbe15f492b33972001f7f73d6d90' },
+  //   userCoin: { USDC: '0xc991e596e610fac02842e510f5039344ef795d644efb803f74539845091fef9f' },
+  // }
 
   const meson = adaptors.getContract(mesonAddress, Meson.abi, wallet_lp)
   const { tokens: coins } = await meson.getSupportedTokens()
@@ -87,8 +94,8 @@ async function swap(digest) {
       txb.pure(add_length_to_hexstr(signedRequest.signature.slice(2))),
       txb.pure(add_length_to_hexstr(signedRequest.initiator.slice(2))),
       txb.pure(wallet_user.address),
-      txb.object(objectID.storeG),
-      txb.object(objectID.storeC.USDC),
+      txb.object(metadata.storeG),
+      txb.object(metadata.storeC.USDC),
       txb.object('0x6'),
     ],
   }
@@ -106,8 +113,8 @@ async function swap(digest) {
       txb.pure(add_length_to_hexstr(signedRelease.encoded.slice(2))),
       txb.pure(add_length_to_hexstr(signedRelease.signature.slice(2))),
       txb.pure(add_length_to_hexstr(signedRelease.initiator.slice(2))),
-      txb.object(objectID.storeG),
-      txb.object(objectID.storeC.USDC),
+      txb.object(metadata.storeG),
+      txb.object(metadata.storeC.USDC),
       txb.object('0x6'),
     ],
   }
@@ -142,10 +149,10 @@ async function swap(digest) {
       txb.pure(add_length_to_hexstr(signedRequest2.signature.slice(2))),
       txb.pure(add_length_to_hexstr(signedRequest2.initiator.slice(2))),
       txb.pure(155),      // Same as the one in `initialize_contracts.js`
-      txb.object(objectID.userCoin.USDC),
+      txb.object(metadata.userCoin.USDC),
       txb.object('0x6'),
-      txb.object(objectID.storeG),
-      txb.object(objectID.storeC.USDC),
+      txb.object(metadata.storeG),
+      txb.object(metadata.storeC.USDC),
     ],
   }
   txb.moveCall(payload)
@@ -163,8 +170,8 @@ async function swap(digest) {
       txb.pure(add_length_to_hexstr(signedRelease2.signature.slice(2))),
       txb.pure(add_length_to_hexstr(wallet_user.address.slice(2, 42))),
       txb.pure(true),
-      txb.object(objectID.storeG),
-      txb.object(objectID.storeC.USDC),
+      txb.object(metadata.storeG),
+      txb.object(metadata.storeC.USDC),
       txb.object('0x6'),
     ],
   }
