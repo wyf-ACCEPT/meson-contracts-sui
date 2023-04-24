@@ -24,21 +24,22 @@ async function prepare() {
   const wallet_lp = adaptors.getWallet(SUI_LP_PRIVATE_KEY, provider)
   const wallet_user = adaptors.getWallet(SUI_USER_PRIVATE_KEY, provider)
 
-  console.log(`Address created: ${wallet.address}`)
+  console.log(`Admin: ${wallet.address}`)
+  console.log(`LP   : ${wallet_lp.address}`)
+  console.log(`User : ${wallet_user.address}`)
 
   if (SUI_FAUCET_URL) {
+    await provider.requestSuiFromFaucet(wallet.address)
     await provider.requestSuiFromFaucet(wallet_lp.address)
     await provider.requestSuiFromFaucet(wallet_user.address)
-    // await provider.requestSuiFromFaucet(wallet.address)
-  
-    const bal_admin = await wallet.getBalance(wallet.address)
-    const bal_lp = await wallet.getBalance(wallet_lp.address)
-    const bal_user = await wallet.getBalance(wallet_user.address)
-    console.log(`Admin Balance: ${utils.formatUnits(bal_admin, 9)} SUI`)
-    console.log(`LP    Balance: ${utils.formatUnits(bal_lp, 9)} SUI`)
-    console.log(`User  Balance: ${utils.formatUnits(bal_user, 9)} SUI`)
   }
 
+  const bal_admin = await wallet.getBalance(wallet.address)
+  const bal_lp = await wallet.getBalance(wallet_lp.address)
+  const bal_user = await wallet.getBalance(wallet_user.address)
+  console.log(`Admin Balance: ${utils.formatUnits(bal_admin, 9)} SUI`)
+  console.log(`LP    Balance: ${utils.formatUnits(bal_lp, 9)} SUI`)
+  console.log(`User  Balance: ${utils.formatUnits(bal_user, 9)} SUI`)
 
   const suiConfigDir = path.join(__dirname, '../.sui')
   const configYaml = `---
@@ -55,14 +56,14 @@ active_address: "${wallet.address}"
   const pk = toB64(new Uint8Array([1, ...fromB64(wallet.keypair.export().privateKey)]))
   const keystore = JSON.stringify([pk], null, 2)
 
-  if (!fs.existsSync(suiConfigDir)){
+  if (!fs.existsSync(suiConfigDir)) {
     fs.mkdirSync(suiConfigDir)
   }
   fs.writeFileSync(path.join(suiConfigDir, 'config.yaml'), configYaml)
   fs.writeFileSync(path.join(suiConfigDir, 'sui.keystore'), keystore)
 
-//   const moveTomlFile = path.join(__dirname, '../Move.toml')
-//   const moveToml = fs.readFileSync(moveTomlFile, 'utf8')
-//   const newMoveToml = moveToml.replace(/(?<=Meson = ")0x.*(?=")/, key.address)
-//   fs.writeFileSync(moveTomlFile, newMoveToml)
+  //   const moveTomlFile = path.join(__dirname, '../Move.toml')
+  //   const moveToml = fs.readFileSync(moveTomlFile, 'utf8')
+  //   const newMoveToml = moveToml.replace(/(?<=Meson = ")0x.*(?=")/, key.address)
+  //   fs.writeFileSync(moveTomlFile, newMoveToml)
 }
