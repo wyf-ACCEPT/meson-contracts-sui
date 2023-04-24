@@ -17,7 +17,6 @@
     "@mesonfi/presets": "^1.8.0-alpha.1",
     "@mesonfi/sdk": "^1.8.0-alpha.1",
     "@mysten/sui.js": "^0.32.1",
-    "@scallop-dao/sui-kit": "^0.30.8",
     "dotenv": "^16.0.3",
     "ethers": "^5.7.1"
   }

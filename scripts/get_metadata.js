@@ -7,6 +7,7 @@ const networkId = use_testnet ? 'sui-testnet' : 'sui'
 presets.useTestnet(use_testnet)
 
 dotenv.config()
+module.exports = { get_metadata }
 
 get_metadata('95uWVLj131occtfUyZpATc3Nk4VYbJcScUkAkcFQX1Wr')
 
@@ -18,7 +19,7 @@ async function get_metadata(digest) {
   const deployTx = await wallet.waitForTransaction(digest)
 
   const mesonAddress = deployTx.changes.find(obj => obj.type == 'published')?.packageId
-  console.log('mesonAddress', mesonAddress)
+  // console.log('mesonAddress', mesonAddress)
   
   const metadata = {
     storeG: deployTx.changes.find(obj => obj.objectType == `${mesonAddress}::MesonStates::GeneralStore`)?.objectId,
@@ -44,5 +45,5 @@ async function get_metadata(digest) {
     metadata.treasuryCap[coin.tokenIndex.toString()] = deployTx.changes.find(obj => obj.objectType == `0x2::coin::TreasuryCap<${coin.addr}>`)?.objectId
   }
 
-  console.log(metadata)
+  return metadata
 }
