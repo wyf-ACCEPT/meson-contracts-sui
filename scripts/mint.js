@@ -8,6 +8,8 @@ const presets = require('@mesonfi/presets').default
 const networkId = 'sui-testnet'
 presets.useTestnet(true)
 
+module.exports = { mint }
+
 mint('0x612ab2d8d1d9f250b458fb5e41b4c7989d5997cb67f8263b65a79dbac541d631', '1000000')
 
 async function mint(to, amount) {
@@ -19,6 +21,7 @@ async function mint(to, amount) {
   const wallet = adaptors.getWallet(privateKey, client)
   const mesonClient = presets.createMesonClient(networkId, wallet)
 
+  let coinObjectList = {}
   for (const coin of network.tokens) {
     const coinContract = mesonClient.getTokenContract(coin.addr)
 
@@ -40,8 +43,13 @@ async function mint(to, amount) {
       })
     )
     const minted = await tx.wait()
-    console.log(`Minted. Object created:`, minted.changes.find(obj => obj.type == 'created')?.objectId)
+    
+    const coinObject = minted.changes.find(obj => obj.type == 'created')?.objectId
+    console.log(`Minted. Object created:`, coinObject)
 
     console.log(`Current balance:`, utils.formatUnits(await coinContract.balanceOf(to), decimals), symbol)
+    coinObjectList[symbol] = coinObject
   }
+
+  return coinObjectList
 }

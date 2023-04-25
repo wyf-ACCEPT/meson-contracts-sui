@@ -12,6 +12,7 @@ const {
  } = require('@mesonfi/sdk')
 const { ERC20, Meson } = require('@mesonfi/contract-abis')
 const { get_metadata } = require('./get_metadata')
+const { mint } = require('./mint')
 
 dotenv.config()
 
@@ -44,9 +45,11 @@ async function swap(digest) {
   const deployTx = await wallet.client.getTransactionBlock({ digest, options: { showInput: true, showEffects: true, showObjectChanges: true } })
   console.log(deployTx)
 
-  const metadata = { ...(await get_metadata(DEPLOY_DIGEST)), storeC: {
-    USDC: '0x009bc7a4d710535342c3549d6e74ca7313b7a92b99f42ffb87b3fe83efece30d',
-    USDT: '0xef41108ef7c8832bee9898dbecbd17d83e25e31d4985f646661e350b1f3afc86',
+  const metadata = { ...(await get_metadata(DEPLOY_DIGEST)), 
+    userCoin: await mint(wallet_user.address, '6000'),
+    storeC: {
+      USDC: '0x009bc7a4d710535342c3549d6e74ca7313b7a92b99f42ffb87b3fe83efece30d',
+      USDT: '0xef41108ef7c8832bee9898dbecbd17d83e25e31d4985f646661e350b1f3afc86',
   }} // Notice: rewrite this later
   const { mesonAddress } = metadata
   
@@ -85,46 +88,45 @@ async function swap(digest) {
   const release = await swap.signForRelease(wallet_user.address, true)
   const signedRelease = new SignedSwapRelease(release)
 
-  txb = new TransactionBlock()
-  payload = {
-    target: `${mesonAddress}::MesonPools::lock`,
-    typeArguments: [`${mesonAddress}::USDC::USDC`],
-    arguments: [
-      txb.pure(add_length_to_hexstr(signedRequest.encoded.slice(2))),
-      txb.pure(add_length_to_hexstr(signedRequest.signature.slice(2))),
-      txb.pure(add_length_to_hexstr(signedRequest.initiator.slice(2))),
-      txb.pure(wallet_user.address),
-      txb.object(metadata.storeG),
-      txb.object(metadata.storeC.USDC),
-      txb.object('0x6'),
-    ],
-  }
-  txb.moveCall(payload)
-  tx = await wallet_lp.sendTransaction(txb)
-  console.log(`Locked: \t${tx.hash}`)
-  await tx.wait()
+  // txb = new TransactionBlock()
+  // payload = {
+  //   target: `${mesonAddress}::MesonPools::lock`,
+  //   typeArguments: [`${mesonAddress}::USDC::USDC`],
+  //   arguments: [
+  //     txb.pure(add_length_to_hexstr(signedRequest.encoded.slice(2))),
+  //     txb.pure(add_length_to_hexstr(signedRequest.signature.slice(2))),
+  //     txb.pure(add_length_to_hexstr(signedRequest.initiator.slice(2))),
+  //     txb.pure(wallet_user.address),
+  //     txb.object(metadata.storeG),
+  //     txb.object(metadata.storeC.USDC),
+  //     txb.object('0x6'),
+  //   ],
+  // }
+  // txb.moveCall(payload)
+  // tx = await wallet_lp.sendTransaction(txb)
+  // console.log(`Locked: \t${tx.hash}`)
+  // await tx.wait()
 
 
-  txb = new TransactionBlock()
-  payload = {
-    target: `${mesonAddress}::MesonPools::release`,
-    typeArguments: [`${mesonAddress}::USDC::USDC`],
-    arguments: [
-      txb.pure(add_length_to_hexstr(signedRelease.encoded.slice(2))),
-      txb.pure(add_length_to_hexstr(signedRelease.signature.slice(2))),
-      txb.pure(add_length_to_hexstr(signedRelease.initiator.slice(2))),
-      txb.object(metadata.storeG),
-      txb.object(metadata.storeC.USDC),
-      txb.object('0x6'),
-    ],
-  }
-  txb.moveCall(payload)
-  tx = await wallet_lp.sendTransaction(txb)
-  console.log(`Released: \t${tx.hash}`)
-  await tx.wait()
+  // txb = new TransactionBlock()
+  // payload = {
+  //   target: `${mesonAddress}::MesonPools::release`,
+  //   typeArguments: [`${mesonAddress}::USDC::USDC`],
+  //   arguments: [
+  //     txb.pure(add_length_to_hexstr(signedRelease.encoded.slice(2))),
+  //     txb.pure(add_length_to_hexstr(signedRelease.signature.slice(2))),
+  //     txb.pure(add_length_to_hexstr(signedRelease.initiator.slice(2))),
+  //     txb.object(metadata.storeG),
+  //     txb.object(metadata.storeC.USDC),
+  //     txb.object('0x6'),
+  //   ],
+  // }
+  // txb.moveCall(payload)
+  // tx = await wallet_lp.sendTransaction(txb)
+  // console.log(`Released: \t${tx.hash}`)
+  // await tx.wait()
 
-  console.log("===================== Swap 1 passed! =====================")
-
+  // console.log("===================== Swap 1 passed! =====================")
 
   const swapData2 = {
     amount: '5000000',
