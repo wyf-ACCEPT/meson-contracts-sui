@@ -16,6 +16,18 @@
                 {
                     "items": [
                         {
+                            "mime": "application/vnd.code.notebook.stderr",
+                            "value": [
+                                "(node:2371141) ExperimentalWarning: The Fetch API is an experimental feature. This feature could change at any time",
+                                "(Use `node --trace-warnings ...` to show where the warning was created)",
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
                             "mime": "text/plain",
                             "value": [
                                 "{",
@@ -81,6 +93,88 @@
                 ""
             ],
             "outputs": []
+        },
+        {
+            "language": "javascript",
+            "source": [
+                "provider.getTransactionBlock({ \n    digest: 'HQVGfvSCa36jUF5f16T46AzAC9FTFGyBoYaCE3WepYzy', \n    options: { showContent: true, showObjectChanges: true } \n})"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "{",
+                                "  digest: \u001b[32m'HQVGfvSCa36jUF5f16T46AzAC9FTFGyBoYaCE3WepYzy'\u001b[39m,",
+                                "  objectChanges: [",
+                                "    {",
+                                "      type: \u001b[32m'mutated'\u001b[39m,",
+                                "      sender: \u001b[32m'0x44acc9799ced77c669c376aae77cee0d64ae31f48db81e4a0e5862a3ad8ae00e'\u001b[39m,",
+                                "      owner: \u001b[36m[Object]\u001b[39m,",
+                                "      objectType: \u001b[32m'0x2::coin::Coin<0x2::sui::SUI>'\u001b[39m,",
+                                "      objectId: \u001b[32m'0x03f0fcfb0e718b5a877dc512b0ee2c415f3977097edbc9c12bd7e47ad7f0bfcb'\u001b[39m,",
+                                "      version: \u001b[32m'155239'\u001b[39m,",
+                                "      previousVersion: \u001b[32m'155237'\u001b[39m,",
+                                "      digest: \u001b[32m'Bx5QN4cCYn6bK6Jp6bixXURvXHfBkZ5VaJzUC8PriHb9'\u001b[39m",
+                                "    },",
+                                "    {",
+                                "      type: \u001b[32m'mutated'\u001b[39m,",
+                                "      sender: \u001b[32m'0x44acc9799ced77c669c376aae77cee0d64ae31f48db81e4a0e5862a3ad8ae00e'\u001b[39m,",
+                                "      owner: \u001b[36m[Object]\u001b[39m,",
+                                "      objectType: \u001b[32m'0x2::package::UpgradeCap'\u001b[39m,",
+                                "      objectId: \u001b[32m'0xad8db3c4f89281ad7a31638638444b95dc60b1b05f74a6007ff7a82e2b247797'\u001b[39m,",
+                                "      version: \u001b[32m'155239'\u001b[39m,",
+                                "      previousVersion: \u001b[32m'155238'\u001b[39m,",
+                                "      digest: \u001b[32m'Cy2pUpL9sWVSPWpma6NrGTLUvRwQeuuNeR9JhCeXibaK'\u001b[39m",
+                                "    },",
+                                "    {",
+                                "      type: \u001b[32m'published'\u001b[39m,",
+                                "      packageId: \u001b[32m'0xaf626af7aa918cef8650284e62a86627bd0b69401f378039377e22216e097a6a'\u001b[39m,",
+                                "      version: \u001b[32m'2'\u001b[39m,",
+                                "      digest: \u001b[32m'4LspquJKyabRR7tekKH2McoAtZk1K9h4vhwENTtUNY3F'\u001b[39m,",
+                                "      modules: \u001b[36m[Array]\u001b[39m",
+                                "    }",
+                                "  ],",
+                                "  timestampMs: \u001b[32m'1682481600740'\u001b[39m,",
+                                "  checkpoint: \u001b[32m'1171150'\u001b[39m",
+                                "}"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "javascript",
+            "source": [
+                "provider.getObject({ \n    id: '0xad8db3c4f89281ad7a31638638444b95dc60b1b05f74a6007ff7a82e2b247797',\n    options: { showContent: true, showType: true }\n})"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "{",
+                                "  data: {",
+                                "    objectId: \u001b[32m'0xad8db3c4f89281ad7a31638638444b95dc60b1b05f74a6007ff7a82e2b247797'\u001b[39m,",
+                                "    version: \u001b[32m'155239'\u001b[39m,",
+                                "    digest: \u001b[32m'Cy2pUpL9sWVSPWpma6NrGTLUvRwQeuuNeR9JhCeXibaK'\u001b[39m,",
+                                "    type: \u001b[32m'0x2::package::UpgradeCap'\u001b[39m,",
+                                "    content: {",
+                                "      dataType: \u001b[32m'moveObject'\u001b[39m,",
+                                "      type: \u001b[32m'0x2::package::UpgradeCap'\u001b[39m,",
+                                "      hasPublicTransfer: \u001b[33mtrue\u001b[39m,",
+                                "      fields: \u001b[36m[Object]\u001b[39m",
+                                "    }",
+                                "  }",
+                                "}"
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }

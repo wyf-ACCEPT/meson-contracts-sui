@@ -27,6 +27,16 @@ module try_upgrade::example {
         transfer::public_transfer(obj, recipient);
     }
     
-    // public entry fun mint_sword(_: &SwordAdmin, attack: u64, recipient)
+    public entry fun mint_sword(
+        _: &SwordAdmin, 
+        attack: u64, 
+        recipient: address, 
+        ctx: &mut TxContext
+    ) {
+        transfer::public_transfer(
+            Sword { id: object::new(ctx), attack },
+            recipient
+        );
+    }
 
 }
