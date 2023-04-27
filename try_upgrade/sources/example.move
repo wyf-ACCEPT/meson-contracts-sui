@@ -12,6 +12,11 @@ module try_upgrade::example {
         attack: u64,
     }
 
+    struct Sheild has key, store {
+        id: UID,
+        defense: u64,
+    }
+
     fun init(ctx: &mut TxContext) {
         transfer::transfer(
             SwordAdmin { id: object::new(ctx) },
@@ -19,6 +24,10 @@ module try_upgrade::example {
         );
         transfer::transfer(
             Sword { id: object::new(ctx), attack: 10 },
+            tx_context::sender(ctx)
+        );
+        transfer::transfer(
+            Sheild { id: object::new(ctx), defense: 8 },
             tx_context::sender(ctx)
         );
     }
@@ -35,6 +44,18 @@ module try_upgrade::example {
     ) {
         transfer::public_transfer(
             Sword { id: object::new(ctx), attack },
+            recipient
+        );
+    }
+
+    public entry fun mint_sheild(
+        _: &SwordAdmin,
+        defense: u64,
+        recipient: address,
+        ctx: &mut TxContext
+    ) {
+        transfer::public_transfer(
+            Sheild { id: object::new(ctx), defense },
             recipient
         );
     }
