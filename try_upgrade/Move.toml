@@ -1,7 +1,7 @@
 [package]
 name = "try_upgrade"
 version = "0.0.1"
-published-at = "0xf781faeccc924178817de58ca64d42d80623b1800b9e443b00a5808002e9dd87"
+published-at = "0xea39063ccf4cfeaa1aad007d3196a008d243efd3d47e7eff6ca5d6ae11f91806"
 
 [dependencies]
 # Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }

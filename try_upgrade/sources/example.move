@@ -1,5 +1,6 @@
 module try_upgrade::example {
     use sui::transfer;
+    use sui::event;
     use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext};
 
@@ -15,6 +16,11 @@ module try_upgrade::example {
     struct Sheild has key, store {
         id: UID,
         defense: u64,
+    }
+
+    struct ForgeSwordEvent has copy, drop {
+        attack: u64,
+        creator: address,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -46,6 +52,7 @@ module try_upgrade::example {
             Sword { id: object::new(ctx), attack },
             recipient
         );
+        event::emit(ForgeSwordEvent { attack, creator: tx_context::sender(ctx) });
     }
 
     public entry fun mint_sheild(

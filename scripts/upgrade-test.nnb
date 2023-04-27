@@ -266,6 +266,18 @@
                 {
                     "items": [
                         {
+                            "mime": "application/vnd.code.notebook.stderr",
+                            "value": [
+                                "(node:2429017) ExperimentalWarning: The Fetch API is an experimental feature. This feature could change at any time",
+                                "(Use `node --trace-warnings ...` to show where the warning was created)",
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
                             "mime": "text/plain",
                             "value": [
                                 "{",
@@ -307,6 +319,64 @@
                     ]
                 }
             ]
+        },
+        {
+            "language": "javascript",
+            "source": [
+                "provider.getTransactionBlock({ \n    digest: '6A34y5A8TdNMkKGvyucRx9qjZnEMPefYkt3Gq3bkm5xn', \n    options: { showContent: true, showObjectChanges: true } \n})"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "text/plain",
+                            "value": [
+                                "{",
+                                "  digest: \u001b[32m'6A34y5A8TdNMkKGvyucRx9qjZnEMPefYkt3Gq3bkm5xn'\u001b[39m,",
+                                "  objectChanges: [",
+                                "    {",
+                                "      type: \u001b[32m'mutated'\u001b[39m,",
+                                "      sender: \u001b[32m'0x44acc9799ced77c669c376aae77cee0d64ae31f48db81e4a0e5862a3ad8ae00e'\u001b[39m,",
+                                "      owner: \u001b[36m[Object]\u001b[39m,",
+                                "      objectType: \u001b[32m'0x2::coin::Coin<0x2::sui::SUI>'\u001b[39m,",
+                                "      objectId: \u001b[32m'0x03f0fcfb0e718b5a877dc512b0ee2c415f3977097edbc9c12bd7e47ad7f0bfcb'\u001b[39m,",
+                                "      version: \u001b[32m'155245'\u001b[39m,",
+                                "      previousVersion: \u001b[32m'155244'\u001b[39m,",
+                                "      digest: \u001b[32m'DhrgRBK1986QBFEcfCzP4v9nydGBCRsP6HBZhwPa7UdB'\u001b[39m",
+                                "    },",
+                                "    {",
+                                "      type: \u001b[32m'mutated'\u001b[39m,",
+                                "      sender: \u001b[32m'0x44acc9799ced77c669c376aae77cee0d64ae31f48db81e4a0e5862a3ad8ae00e'\u001b[39m,",
+                                "      owner: \u001b[36m[Object]\u001b[39m,",
+                                "      objectType: \u001b[32m'0x2::package::UpgradeCap'\u001b[39m,",
+                                "      objectId: \u001b[32m'0xad8db3c4f89281ad7a31638638444b95dc60b1b05f74a6007ff7a82e2b247797'\u001b[39m,",
+                                "      version: \u001b[32m'155245'\u001b[39m,",
+                                "      previousVersion: \u001b[32m'155241'\u001b[39m,",
+                                "      digest: \u001b[32m'EFj3hJiypM1x1ec9hHWwe8fPdGwz6peUxVt7X3Y7CJ8b'\u001b[39m",
+                                "    },",
+                                "    {",
+                                "      type: \u001b[32m'published'\u001b[39m,",
+                                "      packageId: \u001b[32m'0xf208274140c11860449fb138dcc742219287ea7a8b4d5d2a168ced724c7c1f69'\u001b[39m,",
+                                "      version: \u001b[32m'5'\u001b[39m,",
+                                "      digest: \u001b[32m'9ER2szVB53BaJcbDsYouM1RZqhBP7ZUB6AVjuLV1wPYh'\u001b[39m,",
+                                "      modules: \u001b[36m[Array]\u001b[39m",
+                                "    }",
+                                "  ],",
+                                "  timestampMs: \u001b[32m'1682568057935'\u001b[39m,",
+                                "  checkpoint: \u001b[32m'1281754'\u001b[39m",
+                                "}"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "javascript",
+            "source": [
+                "const swordAdmin = '0x2adaba9ea94d1b0a20b0d3676cd555e58232eb400843ff9fb88e0b947bb2c332'"
+            ],
+            "outputs": []
         },
         {
             "language": "javascript",
