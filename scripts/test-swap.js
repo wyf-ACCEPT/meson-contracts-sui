@@ -2,27 +2,6 @@ require('dotenv').config()
 const { readFileSync } = require('fs')
 const { Wallet, keccak256, assert } = require('ethers')
 const { JsonRpcProvider, devnetConnection, Secp256k1Keypair, RawSigner, getTransferSuiTransaction, fromB64, DisplayFieldsBackwardCompatibleResponse, TransactionBlock } = require('@mysten/sui.js');
-const { SuiAccountManager } = require('@scallop-dao/sui-kit')
-
-
-class PublishLogParser {
-    constructor() {
-        this.publish_log_path = './scripts/publish-output.log'
-        this.content = readFileSync(this.publish_log_path, 'utf-8')
-    }
-
-    parse() {
-        return {
-            AdminCap: this.content.match(/AdminCap"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)"/)[1],
-            GeneralStore: this.content.match(/GeneralStore"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)"/)[1],
-            PackageId: this.content.match(/"packageId": String\("(0x[0-9a-fA-F]+)"/)[1],
-            ObjectUSDC: this.content.match(/Coin<0x[0-9a-fA-F]+::USDC::USDC>"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)/)[1],
-            ObjectUSDT: this.content.match(/Coin<0x[0-9a-fA-F]+::USDT::USDT>"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)/)[1],
-            ObjectUCT: this.content.match(/Coin<0x[0-9a-fA-F]+::UCT::UCT>"\),\n\s+"objectId": String\("(0x[0-9a-fA-F]+)/)[1],
-            digest: this.content.match(/----- Transaction Digest ----\n(.+)/)[1]
-        }
-    }
-}
 
 
 class Utils {
@@ -38,9 +17,9 @@ class Utils {
         this.sign_release = this.sign_release.bind(this)
 
         // accounts
-        this.alice = this.load_mnemonic(process.env.WALLET_1)
-        this.bob = this.load_mnemonic(process.env.WALLET_2)
-        this.carol = this.load_mnemonic(process.env.WALLET_3)
+        this.alice = this.load_private_key(process.env.WALLET_1)
+        this.bob = this.load_private_key(process.env.WALLET_2)
+        this.carol = this.load_private_key(process.env.WALLET_3)
         this.alice_address = this.get_address(process.env.WALLET_1)
         this.bob_address = this.get_address(process.env.WALLET_2)
         this.carol_address = this.get_address(process.env.WALLET_3)
@@ -48,24 +27,42 @@ class Utils {
         this.initiator_address = this.initiator_wallet.address.slice(2)
         this.initiator_buffer = Buffer.from(this.initiator_address, 'hex')
 
+    }
+
+    async parse(digest) {
+        const deployTx = await this.provider.getTransactionBlock(
+            { digest, options: { showObjectChanges: true } }
+        )
+
+        this.mesonAddress = deployTx.objectChanges.filter(obj => obj.type == 'published')[0].packageId
+        console.log('mesonAddress', this.mesonAddress)
+        
+        this.object_ids = {
+          mesonAddress: this.mesonAddress,
+          GeneralStore: deployTx.objectChanges.filter(obj => String(obj.objectType).includes('GeneralStore'))[0].objectId,
+          AdminCap: deployTx.objectChanges.filter(obj => String(obj.objectType).includes('AdminCap'))[0].objectId
+        }
+
         // objects (for SUI only)
-        const parser = new PublishLogParser()
-        this.object_ids = parser.parse()
-        this.usdc_module = `${this.object_ids.PackageId}::USDC`
-        this.usdt_module = `${this.object_ids.PackageId}::USDT`
-        this.uct_module = `${this.object_ids.PackageId}::UCT`
-        this.states = `${this.object_ids.PackageId}::MesonStates`
-        this.swap = `${this.object_ids.PackageId}::MesonSwap`
-        this.pools = `${this.object_ids.PackageId}::MesonPools`
-        this.helpers = `${this.object_ids.PackageId}::MesonHelpers`
+        this.usdc_module = `${this.mesonAddress}::USDC`
+        this.usdt_module = `${this.mesonAddress}::USDT`
+        this.uct_module = `${this.mesonAddress}::UCT`
+        this.states = `${this.mesonAddress}::MesonStates`
+        this.swap = `${this.mesonAddress}::MesonSwap`
+        this.pools = `${this.mesonAddress}::MesonPools`
+        this.helpers = `${this.mesonAddress}::MesonHelpers`
+    }
+
+    load_private_key(b64secret) {
+        return new RawSigner(Secp256k1Keypair.fromSecretKey(fromB64(b64secret).slice(1)), this.provider)
     }
 
     load_mnemonic(string) {
         return new RawSigner(Secp256k1Keypair.deriveKeypair(string), this.provider)
     }
 
-    get_address(string) {
-        return Secp256k1Keypair.deriveKeypair(string).getPublicKey().toSuiAddress()
+    get_address(b64secret) {
+        return Secp256k1Keypair.fromSecretKey(fromB64(b64secret).slice(1)).getPublicKey().toSuiAddress()
     }
 
     add_length_to_hexstr(hexstring) {
@@ -149,39 +146,6 @@ class Utils {
         console.log(`Carol ${this.carol_address} balance: ${info.totalBalance / 1e9} SUI`)
     }
 
-//     async show_boxes(meson_index, is_in_chain) {
-//         if (is_in_chain == true) {
-//             console.log("Meson App boxes (encodedSwap -> postedValue): ")
-//             let box_res = await this.client.getApplicationBoxes(meson_index).do()
-//             for (let box of box_res.boxes) {
-//                 let encoded_key = box.name
-//                 let posted_value = (await this.client.getApplicationBoxByName(meson_index, encoded_key).do()).value
-//                 if (posted_value.length == 84)
-//                     console.log(
-//                         `[EncodedSwap] %s, \n\t-> [PostedValue] (lp, initiator, from_address): \n\t\t\t(%s, \n\t\t\t%s, \n\t\t\t%s)`,
-//                         this.buffer_to_hex(encoded_key),
-//                         this.buffer_to_hex(posted_value.slice(0, 32)),
-//                         this.buffer_to_hex(posted_value.slice(32, 52)),
-//                         this.buffer_to_hex(posted_value.slice(52)),
-//                     )
-//             }
-//         } else {
-//             console.log("Meson App boxes (swapId -> lockedValue): ")
-//             let box_res = await this.client.getApplicationBoxes(meson_index).do()
-//             for (let box of box_res.boxes) {
-//                 let swapid_key = box.name
-//                 let locked_value = (await this.client.getApplicationBoxByName(meson_index, swapid_key).do()).value
-//                 if (locked_value.length == 69)
-//                     console.log(
-//                         `[SwapID] %s, \n\t-> [LockedValue] (lp, until, recipient): \n\t\t\t(%s, \n\t\t\t%s, \n\t\t\t%s)`,
-//                         this.buffer_to_hex(swapid_key),
-//                         this.buffer_to_hex(locked_value.slice(0, 32)),
-//                         this.hex_timestamp_to_date(this.buffer_to_hex(locked_value.slice(32, 37))),
-//                         this.buffer_to_hex(locked_value.slice(37)),
-//                     )
-//             }
-//         }
-//     }
 }
 
 
@@ -190,17 +154,16 @@ main = async () => {
 
     const utils = new Utils()
     await utils.show_account_info()
+    await utils.parse('7WyhAtN1CUvW9WhWGxaoiRfUjEfqPGd14fW1P3XiWtgw')
 
     const lp_deposit_amount = 1_000 * 1_000_000     // $1k to deposit
     const gas_budget = 299999999
     let txn_result, txn
 
-//     const { initiator_buffer, initiator_address, listToUint8ArrayList, submit_transaction, submit_transaction_group, sp_func, get_swapID, sign_release, show_boxes } = utils
     const { provider, alice, bob, carol, alice_address, bob_address, carol_address, build_encoded, get_expire_ts, add_length_to_hexstr, sign_request, sign_release } = utils
     console.log("LP's coin object:")
     console.log(`USDC: ${utils.object_ids.ObjectUSDC}`)
     console.log(`USDT: ${utils.object_ids.ObjectUSDT}\n`)
-
 
 
 
@@ -230,8 +193,10 @@ main = async () => {
     // console.log(txn_result)
     // console.log('========== Meson add USDC success! ==========')
 
-    // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDC = '0x4ed2abc268c54be3112ea2028d4e3ec689438176be9e03e0339c82dc0ead42c1'
+    // digest: 'Cy8TgGYmhsB44L2RiUbGyn2nRP9BPzqCsrgEyXcWMA8v'
+
+    // // Use sui explorer to find the StoreForCoin object ID!
+    // const StoreUSDC = '0x4ed2abc268c54be3112ea2028d4e3ec689438176be9e03e0339c82dc0ead42c1'
 
     
     // const txnAddUSDT = new TransactionBlock()
@@ -251,8 +216,10 @@ main = async () => {
     // console.log(txn_result)
     // console.log('========== Meson add USDT success! ==========\n')
 
-    // Use sui explorer to find the StoreForCoin object ID!
-    const StoreUSDT = '0xb1d2bd988b063a2ca2c764550f593427f18b9dab85991dc3d23e1d4446333f85'
+    // digest: '3FVgqfEsDMejEKyUDHyk4M99jfVR4g9awKEcpPBmRigN'
+
+    // // Use sui explorer to find the StoreForCoin object ID!
+    // const StoreUSDT = '0xb1d2bd988b063a2ca2c764550f593427f18b9dab85991dc3d23e1d4446333f85'
 
 
     console.log("\n================== 1.3 Transfer USDC and USDT to LP and User ==================")
@@ -282,42 +249,40 @@ main = async () => {
 
 
     console.log("\n================== 2.2 LP deposit (and register) to Meson ==================")
-    // txn = new TransactionBlock()
-    // txn.moveCall({
-    //     target: `${utils.pools}::depositAndRegister`,
-    //     typeArguments: [
-    //         `${utils.usdc_module}::USDC`,
-    //     ],
-    //     arguments: [
-    //         txn.pure(lp_deposit_amount),
-    //         txn.pure(155),          // A random pool index
-    //         txn.object(lp_usdc_object),
-    //         txn.object(utils.object_ids.GeneralStore),
-    //         txn.object(StoreUSDC),
-    //     ],
-    // })
-    // txn.setGasBudget(gas_budget)
-    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
-    // console.log(txn_result)
+    txn = new TransactionBlock()
+    txn.moveCall({
+        target: `${utils.pools}::depositAndRegister`,
+        typeArguments: [
+            `${utils.usdc_module}::USDC`,
+        ],
+        arguments: [
+            txn.pure(lp_deposit_amount),
+            txn.pure(155),          // A random pool index
+            txn.object(lp_usdc_object),
+            txn.object(utils.object_ids.GeneralStore),
+        ],
+    })
+    txn.setGasBudget(gas_budget)
+    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    console.log(txn_result)
     console.log(`LP(Bob) registers a new pool and deposits ${lp_deposit_amount / 1e6} USDC into Meson Pools!\n`)
 
-    // txn = new TransactionBlock()
-    // txn.moveCall({
-    //     target: `${utils.pools}::deposit`,
-    //     typeArguments: [
-    //         `${utils.usdt_module}::USDT`,
-    //     ],
-    //     arguments: [
-    //         txn.pure(lp_deposit_amount),
-    //         txn.pure(155),
-    //         txn.object(lp_usdt_object),
-    //         txn.object(utils.object_ids.GeneralStore),
-    //         txn.object(StoreUSDT),
-    //     ],
-    // })
-    // txn.setGasBudget(gas_budget)
-    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
-    // console.log(txn_result)
+    txn = new TransactionBlock()
+    txn.moveCall({
+        target: `${utils.pools}::deposit`,
+        typeArguments: [
+            `${utils.usdt_module}::USDT`,
+        ],
+        arguments: [
+            txn.pure(lp_deposit_amount),
+            txn.pure(155),
+            txn.object(lp_usdt_object),
+            txn.object(utils.object_ids.GeneralStore),
+        ],
+    })
+    txn.setGasBudget(gas_budget)
+    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    console.log(txn_result)
     console.log(`LP(Bob) deposits ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
 
 
