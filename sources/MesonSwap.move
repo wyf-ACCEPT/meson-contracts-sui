@@ -9,7 +9,7 @@ module Meson::MesonSwap {
     use sui::clock::{Self, Clock};
     use sui::tx_context::{Self, TxContext};
     use Meson::MesonHelpers;
-    use Meson::MesonStates::{Self, GeneralStore, StoreForCoin};
+    use Meson::MesonStates::{Self, GeneralStore};
 
     const EPOOL_INDEX_CANNOT_BE_ZERO: u64 = 16;
     const EPOOL_INDEX_MISMATCH: u64 = 17;
@@ -42,7 +42,6 @@ module Meson::MesonSwap {
         coin_from_sender: &mut Coin<CoinType>, // TODO: accept multiple coin objects of the same type?
         clock_object: &Clock,
         storeG: &mut GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
         ctx: &mut TxContext,
     ) {
         MesonHelpers::is_encoded_valid(encoded_swap);
@@ -64,7 +63,7 @@ module Meson::MesonSwap {
         vector::push_back(&mut encoded_swap, 0xff); // so it cannot be identical to a swap_id
         MesonStates::add_posted_swap(encoded_swap, pool_index, initiator, tx_context::sender(ctx), storeG);
         let coins = coin::split(coin_from_sender, amount, ctx);
-        MesonStates::coins_to_pending(encoded_swap, coins, storeC);
+        MesonStates::coins_to_pending(encoded_swap, coins, storeG);
     }
 
 
@@ -85,7 +84,6 @@ module Meson::MesonSwap {
     public entry fun cancelSwap<CoinType>(
         encoded_swap: vector<u8>,
         storeG: &mut GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
         clock_object: &Clock,
     ) {
         let now_seconds = clock::timestamp_ms(clock_object) / 1000;
@@ -94,7 +92,7 @@ module Meson::MesonSwap {
 
         vector::push_back(&mut encoded_swap, 0xff); // so it cannot be identical to a swap_id
         let (_, _, from_address) = MesonStates::remove_posted_swap(encoded_swap, clock_object, storeG);
-        let coins = MesonStates::coins_from_pending(encoded_swap, storeC);
+        let coins = MesonStates::coins_from_pending<CoinType>(encoded_swap, storeG);
         transfer::public_transfer(coins, from_address);
     }
 
@@ -106,7 +104,6 @@ module Meson::MesonSwap {
         recipient: vector<u8>,
         deposit_to_pool: bool,
         storeG: &mut GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
         clock_object: &Clock,
     ) {
         let posted_swap_key = copy encoded_swap;
@@ -117,9 +114,9 @@ module Meson::MesonSwap {
 
         MesonHelpers::check_release_signature(encoded_swap, recipient, signature, initiator);
 
-        let coins = MesonStates::coins_from_pending(posted_swap_key, storeC);
+        let coins = MesonStates::coins_from_pending<CoinType>(posted_swap_key, storeG);
         if (deposit_to_pool) {
-            MesonStates::coins_to_pool(pool_index, coins, storeC);
+            MesonStates::coins_to_pool(pool_index, coins, storeG);
         } else {
             transfer::public_transfer(coins, MesonStates::owner_of_pool(pool_index, storeG));
         }

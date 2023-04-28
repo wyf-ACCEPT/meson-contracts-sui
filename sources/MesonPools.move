@@ -10,7 +10,7 @@ module Meson::MesonPools {
     use sui::clock::{Self, Clock};
     use sui::tx_context::{Self, TxContext};
     use Meson::MesonHelpers;
-    use Meson::MesonStates::{Self, GeneralStore, StoreForCoin};
+    use Meson::MesonStates::{Self, GeneralStore};
 
     const EPOOL_INDEX_CANNOT_BE_ZERO: u64 = 16;
     const EPOOL_INDEX_MISMATCH: u64 = 17;
@@ -28,13 +28,12 @@ module Meson::MesonPools {
         pool_index: u64,
         coin_from_sender: &mut Coin<CoinType>,
         storeG: &mut GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
         ctx: &mut TxContext,
     ) {
         let sender_addr = tx_context::sender(ctx);
         MesonStates::register_pool_index(pool_index, sender_addr, storeG);
         let coins = coin::split(coin_from_sender, amount, ctx);
-        MesonStates::coins_to_pool(pool_index, coins, storeC);
+        MesonStates::coins_to_pool(pool_index, coins, storeG);
     }
 
     // Named consistently with solidity contracts
@@ -42,27 +41,25 @@ module Meson::MesonPools {
         amount: u64, 
         pool_index: u64, 
         coin_from_sender: &mut Coin<CoinType>,
-        storeG: &GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
+        storeG: &mut GeneralStore,
         ctx: &mut TxContext
     ) {
         let sender_addr = tx_context::sender(ctx);
         assert!(pool_index == MesonStates::pool_index_of(sender_addr, storeG), EPOOL_INDEX_MISMATCH);
         let coins = coin::split(coin_from_sender, amount, ctx);
-        MesonStates::coins_to_pool(pool_index, coins, storeC);
+        MesonStates::coins_to_pool(pool_index, coins, storeG);
     }
 
     // Named consistently with solidity contracts
     public entry fun withdraw<CoinType>(
         amount: u64, 
         pool_index: u64,
-        storeG: &GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
+        storeG: &mut GeneralStore,
         ctx: &mut TxContext,
     ) {
         let sender_addr = tx_context::sender(ctx);
         assert!(pool_index == MesonStates::pool_index_if_owner(sender_addr, storeG), EPOOL_INDEX_MISMATCH);
-        let coins = MesonStates::coins_from_pool(pool_index, amount, storeC, ctx);
+        let coins = MesonStates::coins_from_pool<CoinType>(pool_index, amount, storeG, ctx);
         transfer::public_transfer(coins, sender_addr);
     }
 
@@ -99,7 +96,6 @@ module Meson::MesonPools {
         initiator: vector<u8>, // an eth address of (20 bytes), the signer to sign for release
         recipient: address,
         storeG: &mut GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
         clock_object: &Clock,
         ctx: &mut TxContext,
     ) {
@@ -120,8 +116,8 @@ module Meson::MesonPools {
         let swap_id = MesonHelpers::get_swap_id(encoded_swap, initiator);
         let amount = MesonHelpers::amount_from(encoded_swap)- MesonHelpers::fee_for_lp(encoded_swap);
 
-        let coins = MesonStates::coins_from_pool(pool_index, amount, storeC, ctx);
-        MesonStates::coins_to_pending(swap_id, coins, storeC);
+        let coins = MesonStates::coins_from_pool<CoinType>(pool_index, amount, storeG, ctx);
+        MesonStates::coins_to_pending(swap_id, coins, storeG);
 
         MesonStates::add_locked_swap(swap_id, pool_index, until, recipient, storeG);
     }
@@ -132,7 +128,6 @@ module Meson::MesonPools {
         encoded_swap: vector<u8>,
         initiator: vector<u8>,
         storeG: &mut GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
         clock_object: &Clock,
     ) {
         MesonHelpers::is_eth_addr(initiator);
@@ -142,8 +137,8 @@ module Meson::MesonPools {
         let now_seconds = clock::timestamp_ms(clock_object) / 1000;
         assert!(until < now_seconds, ESWAP_STILL_IN_LOCK);
 
-        let coins = MesonStates::coins_from_pending(swap_id, storeC);
-        MesonStates::coins_to_pool(pool_index, coins, storeC);
+        let coins = MesonStates::coins_from_pending<CoinType>(swap_id, storeG);
+        MesonStates::coins_to_pool(pool_index, coins, storeG);
     }
 
 
@@ -154,7 +149,6 @@ module Meson::MesonPools {
         signature: vector<u8>,
         initiator: vector<u8>,
         storeG: &mut GeneralStore,
-        storeC: &mut StoreForCoin<CoinType>,
         clock_object: &Clock,
         ctx: &mut TxContext,
     ) {
@@ -179,10 +173,10 @@ module Meson::MesonPools {
         );
 
         // Release to recipient
-        let coins = MesonStates::coins_from_pending(swap_id, storeC);
+        let coins = MesonStates::coins_from_pending<CoinType>(swap_id, storeG);
         if (!waived) {
             let service_fee = coin::split(&mut coins, MesonHelpers::service_fee(encoded_swap), ctx);
-            MesonStates::coins_to_pool(0, service_fee, storeC);
+            MesonStates::coins_to_pool(0, service_fee, storeG);
         };
         transfer::public_transfer(coins, recipient);
     }
