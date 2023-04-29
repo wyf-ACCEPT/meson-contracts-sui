@@ -34,13 +34,17 @@ class Utils {
             { digest, options: { showObjectChanges: true } }
         )
 
-        this.mesonAddress = deployTx.objectChanges.filter(obj => obj.type == 'published')[0].packageId
+        this.mesonAddress = deployTx.objectChanges
+            .filter(obj => obj.type == 'published')[0].packageId
+            .replace(/0x0+/g, '0x')
         console.log('mesonAddress', this.mesonAddress)
         
         this.object_ids = {
           mesonAddress: this.mesonAddress,
           GeneralStore: deployTx.objectChanges.filter(obj => String(obj.objectType).includes('GeneralStore'))[0].objectId,
-          AdminCap: deployTx.objectChanges.filter(obj => String(obj.objectType).includes('AdminCap'))[0].objectId
+          AdminCap: deployTx.objectChanges.filter(obj => String(obj.objectType).includes('AdminCap'))[0].objectId,
+          AliceUSDC: deployTx.objectChanges.filter(obj => (String(obj.objectType).includes('USDC::USDC') & String(obj.objectType).includes('coin::Coin<')))[0].objectId,
+          AliceUSDT: deployTx.objectChanges.filter(obj => (String(obj.objectType).includes('USDT::USDT') & String(obj.objectType).includes('coin::Coin<')))[0].objectId,
         }
 
         // objects (for SUI only)
@@ -249,41 +253,41 @@ main = async () => {
 
 
     console.log("\n================== 2.2 LP deposit (and register) to Meson ==================")
-    txn = new TransactionBlock()
-    txn.moveCall({
-        target: `${utils.pools}::depositAndRegister`,
-        typeArguments: [
-            `${utils.usdc_module}::USDC`,
-        ],
-        arguments: [
-            txn.pure(lp_deposit_amount),
-            txn.pure(155),          // A random pool index
-            txn.object(lp_usdc_object),
-            txn.object(utils.object_ids.GeneralStore),
-        ],
-    })
-    txn.setGasBudget(gas_budget)
-    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
-    console.log(txn_result)
-    console.log(`LP(Bob) registers a new pool and deposits ${lp_deposit_amount / 1e6} USDC into Meson Pools!\n`)
+    // txn = new TransactionBlock()
+    // txn.moveCall({
+    //     target: `${utils.pools}::depositAndRegister`,
+    //     typeArguments: [
+    //         `${utils.usdc_module}::USDC`,
+    //     ],
+    //     arguments: [
+    //         txn.pure(lp_deposit_amount),
+    //         txn.pure(155),          // A random pool index
+    //         txn.object(lp_usdc_object),
+    //         txn.object(utils.object_ids.GeneralStore),
+    //     ],
+    // })
+    // txn.setGasBudget(gas_budget)
+    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    // console.log(txn_result)
+    // console.log(`LP(Bob) registers a new pool and deposits ${lp_deposit_amount / 1e6} USDC into Meson Pools!\n`)
 
-    txn = new TransactionBlock()
-    txn.moveCall({
-        target: `${utils.pools}::deposit`,
-        typeArguments: [
-            `${utils.usdt_module}::USDT`,
-        ],
-        arguments: [
-            txn.pure(lp_deposit_amount),
-            txn.pure(155),
-            txn.object(lp_usdt_object),
-            txn.object(utils.object_ids.GeneralStore),
-        ],
-    })
-    txn.setGasBudget(gas_budget)
-    txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
-    console.log(txn_result)
-    console.log(`LP(Bob) deposits ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
+    // txn = new TransactionBlock()
+    // txn.moveCall({
+    //     target: `${utils.pools}::deposit`,
+    //     typeArguments: [
+    //         `${utils.usdt_module}::USDT`,
+    //     ],
+    //     arguments: [
+    //         txn.pure(lp_deposit_amount),
+    //         txn.pure(155),
+    //         txn.object(lp_usdt_object),
+    //         txn.object(utils.object_ids.GeneralStore),
+    //     ],
+    // })
+    // txn.setGasBudget(gas_budget)
+    // txn_result = await bob.signAndExecuteTransactionBlock({ transactionBlock: txn })
+    // console.log(txn_result)
+    // console.log(`LP(Bob) deposits ${lp_deposit_amount / 1e6} USDT into Meson Pools!\n`)
 
 
 
@@ -333,7 +337,6 @@ main = async () => {
             txn.object(user_usdc_object),
             txn.object('0x6'),
             txn.object(utils.object_ids.GeneralStore),
-            txn.object(StoreUSDC),
         ],
     })
     txn.setGasBudget(gas_budget)
@@ -374,7 +377,6 @@ main = async () => {
             txn.pure(add_length_to_hexstr(utils.initiator_address)),
             txn.pure(recipient_32),
             txn.object(utils.object_ids.GeneralStore),
-            txn.object(StoreUSDT),
             txn.object('0x6'),
         ],
     })
@@ -400,7 +402,6 @@ main = async () => {
             txn.pure(add_length_to_hexstr(sig_rel)),
             txn.pure(add_length_to_hexstr(utils.initiator_address)),
             txn.object(utils.object_ids.GeneralStore),
-            txn.object(StoreUSDT),
             txn.object('0x6'),
         ],
     })
@@ -424,7 +425,6 @@ main = async () => {
             txn.pure(add_length_to_hexstr(recipient_20)),
             txn.pure(true),
             txn.object(utils.object_ids.GeneralStore),
-            txn.object(StoreUSDC),
             txn.object('0x6'),
         ],
     })
