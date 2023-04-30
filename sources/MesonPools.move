@@ -4,7 +4,6 @@
 /// Methods in this class will be executed when a user wants to swap into this chain.
 /// LP pool operations are also provided in this class.
 module Meson::MesonPools {
-    /* ---------------------------- Constant variables ---------------------------- */
     use sui::transfer;
     use sui::coin::{Self, Coin};
     use sui::clock::{Self, Clock};
@@ -20,8 +19,6 @@ module Meson::MesonPools {
     const ESWAP_PASSED_LOCK_PERIOD: u64 = 48;
 
 
-
-    /* ---------------------------- LP functions ---------------------------- */
     // Named consistently with solidity contracts
     public entry fun depositAndRegister<CoinType>(
         amount: u64, 
@@ -86,9 +83,6 @@ module Meson::MesonPools {
     }
 
 
-
-    /* ---------------------------- Main functions ---------------------------- */
-    // Step 2: Lock
     // Named consistently with solidity contracts
     public entry fun lock<CoinType>(
         encoded_swap: vector<u8>,
@@ -114,7 +108,7 @@ module Meson::MesonPools {
         MesonHelpers::check_request_signature(encoded_swap, signature, initiator);
 
         let swap_id = MesonHelpers::get_swap_id(encoded_swap, initiator);
-        let amount = MesonHelpers::amount_from(encoded_swap)- MesonHelpers::fee_for_lp(encoded_swap);
+        let amount = MesonHelpers::amount_from(encoded_swap) - MesonHelpers::fee_for_lp(encoded_swap);
 
         let coins = MesonStates::coins_from_pool<CoinType>(pool_index, amount, storeG, ctx);
         MesonStates::coins_to_pending(swap_id, coins, storeG);

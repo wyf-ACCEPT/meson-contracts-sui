@@ -36,16 +36,9 @@ module Meson::MesonStates {
         pool_of_authorized_addr: table::Table<address, u64>,        // authorized_addr => pool_index
         posted_swaps: table::Table<vector<u8>, PostedSwap>,         // encoded_swap => posted_swap
         locked_swaps: table::Table<vector<u8>, LockedSwap>,         // swap_id => locked_swap
-        in_pool_coins_all: bag::Bag,
-        pending_coins_all: bag::Bag,
+        in_pool_coins: bag::Bag,
+        pending_coins: bag::Bag,
     }
-
-    // // Contains all the related tables (mappings).
-    // struct StoreForCoin<phantom CoinType> has key, store {
-    //     id: UID,
-    //     in_pool_coins: table::Table<u64, Coin<CoinType>>,           // pool_index => Coins
-    //     pending_coins: table::Table<vector<u8>, Coin<CoinType>>,    // swap_id / [encoded_swap|ff] => Coins
-    // }
 
     struct PostedSwap has store {
         pool_index: u64,
@@ -72,8 +65,8 @@ module Meson::MesonStates {
             pool_of_authorized_addr: table::new<address, u64>(ctx),
             posted_swaps: table::new<vector<u8>, PostedSwap>(ctx),
             locked_swaps: table::new<vector<u8>, LockedSwap>(ctx),
-            in_pool_coins_all: bag::new(ctx),
-            pending_coins_all: bag::new(ctx),
+            in_pool_coins: bag::new(ctx),
+            pending_coins: bag::new(ctx),
         };
         // pool_index = 0 is premium_manager
         table::add(&mut store.pool_owners, 0, sender_addr);
@@ -100,24 +93,18 @@ module Meson::MesonStates {
         coin_index: u8,
         storeG: &mut GeneralStore,
         ctx: &mut TxContext,
-    ) {       // `&AdminCap` ensures the sender is the deployer
+    ) {
         let supported_coins = &mut storeG.supported_coins;
         if (table::contains(supported_coins, coin_index)) {
             table::remove(supported_coins, coin_index);     // [TODO] It's not proper to directly cover the original coin index.
         };
         table::add(supported_coins, coin_index, type_name::get<CoinType>());
 
-        // let coin_store = StoreForCoin<CoinType> {
-        //     id: object::new(ctx),
-        //     in_pool_coins: table::new<u64, Coin<CoinType>>(ctx),
-        //     pending_coins: table::new<vector<u8>, Coin<CoinType>>(ctx),
-        // };
-        // transfer::share_object(coin_store);
         let in_pool_coins = table::new<u64, Coin<CoinType>>(ctx);
         let pending_coins = table::new<vector<u8>, Coin<CoinType>>(ctx);
         let coin_typename = type_name::get<CoinType>();
-        bag::add(&mut storeG.in_pool_coins_all, coin_typename, in_pool_coins);
-        bag::add(&mut storeG.pending_coins_all, coin_typename, pending_coins);
+        bag::add(&mut storeG.in_pool_coins, coin_typename, in_pool_coins);
+        bag::add(&mut storeG.pending_coins, coin_typename, pending_coins);
     }
 
     public(friend) fun coin_type_for_index(coin_index: u8, storeG: &GeneralStore): TypeName {
@@ -175,11 +162,9 @@ module Meson::MesonStates {
         assert!(pool_index == table::remove(&mut storeG.pool_of_authorized_addr, addr), EPOOL_ADDR_AUTHORIZED_TO_ANOTHER);
     }
 
+
     public(friend) fun coins_to_pool<CoinType>(pool_index: u64, coins_to_add: Coin<CoinType>, storeG: &mut GeneralStore) {
-        let in_pool_coins = bag::borrow_mut(
-            &mut storeG.in_pool_coins_all, 
-            type_name::get<CoinType>(),
-        );
+        let in_pool_coins = bag::borrow_mut(&mut storeG.in_pool_coins, type_name::get<CoinType>());
         if (table::contains(in_pool_coins, pool_index)) {
             let current_coins = table::borrow_mut(in_pool_coins, pool_index);
             coin::join<CoinType>(current_coins, coins_to_add);
@@ -194,27 +179,18 @@ module Meson::MesonStates {
         storeG: &mut GeneralStore,
         ctx: &mut TxContext
     ): Coin<CoinType> {
-        let in_pool_coins = bag::borrow_mut(
-            &mut storeG.in_pool_coins_all, 
-            type_name::get<CoinType>(),
-        );
+        let in_pool_coins = bag::borrow_mut(&mut storeG.in_pool_coins, type_name::get<CoinType>());
         let current_coins = table::borrow_mut(in_pool_coins, pool_index);
         coin::split<CoinType>(current_coins, amount, ctx)
     }
 
     public(friend) fun coins_to_pending<CoinType>(key: vector<u8>, coins: Coin<CoinType>, storeG: &mut GeneralStore) {
-        let pending_coins = bag::borrow_mut(
-            &mut storeG.pending_coins_all,
-            type_name::get<CoinType>(),
-        );
+        let pending_coins = bag::borrow_mut(&mut storeG.pending_coins, type_name::get<CoinType>());
         table::add(pending_coins, key, coins);
     }
 
     public(friend) fun coins_from_pending<CoinType>(key: vector<u8>, storeG: &mut GeneralStore): Coin<CoinType> {
-        let pending_coins = bag::borrow_mut(
-            &mut storeG.pending_coins_all,
-            type_name::get<CoinType>(),
-        );
+        let pending_coins = bag::borrow_mut(&mut storeG.pending_coins, type_name::get<CoinType>());
         table::remove(pending_coins, key)
     }
 
@@ -245,7 +221,7 @@ module Meson::MesonStates {
 
     public(friend) fun remove_posted_swap(
         encoded_swap: vector<u8>,
-        clock_object: &Clock,       // The `Clock` object ID is `0x6`
+        clock_object: &Clock,
         storeG: &mut GeneralStore,
     ): (u64, vector<u8>, address)  {
         let posted_swaps = &mut storeG.posted_swaps;

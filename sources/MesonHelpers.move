@@ -347,4 +347,3 @@ module Meson::MesonHelpers {
         assert!(eth_addr == x"2eF8a51F8fF129DBb874A0efB021702F59C1b211", 1);
     }
 }
-
