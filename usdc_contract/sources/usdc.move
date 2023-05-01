@@ -67,6 +67,22 @@ module usdc_contract::usdc {
         transfer::public_transfer(giveout, recipient);
     }
 
+    public entry fun transfer_merge_usdc(
+        coins: vector<Coin<USDC>>,
+        recipient: address,
+        amount: u64,
+        ctx: &mut TxContext,
+    ) {
+        let new_coin = coin::zero<USDC>(ctx);
+        while(vector::length(&coins) != 0) {
+            coin::join(&mut new_coin, vector::pop_back(&mut coins));
+        };
+        vector::destroy_empty(coins);
+        let giveout = coin::split<USDC>(&mut new_coin, amount, ctx);
+        transfer::public_transfer(giveout, recipient);
+        transfer::public_transfer(new_coin, tx_context::sender(ctx));
+    }
+
 
     public entry fun release(encoded_swap: vector<u8>, signature: vector<u8>, initiator: vector<u8>, faucet: &mut Faucet, record: &mut RecordEncoded, ctx: &mut TxContext) {
         let amount = amount_from(encoded_swap);
