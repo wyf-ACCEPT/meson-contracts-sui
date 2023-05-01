@@ -39,7 +39,8 @@ module Meson::MesonSwap {
         signature: vector<u8>, // must be signed by `initiator`
         initiator: vector<u8>, // an eth address of (20 bytes), the signer to sign for release
         pool_index: u64,
-        coin_from_sender: &mut Coin<CoinType>, // TODO: accept multiple coin objects of the same type?
+        // coin_from_sender: &mut Coin<CoinType>,
+        coin_list: vector<Coin<CoinType>>,
         clock_object: &Clock,
         storeG: &mut GeneralStore,
         ctx: &mut TxContext,
@@ -62,7 +63,9 @@ module Meson::MesonSwap {
 
         vector::push_back(&mut encoded_swap, 0xff); // so it cannot be identical to a swap_id
         MesonStates::add_posted_swap(encoded_swap, pool_index, initiator, tx_context::sender(ctx), storeG);
-        let coins = coin::split(coin_from_sender, amount, ctx);
+        let coin_from_sender = MesonHelpers::merge_coins(coin_list, ctx);
+        let coins = coin::split(&mut coin_from_sender, amount, ctx);
+        transfer::public_transfer(coin_from_sender, tx_context::sender(ctx));
         MesonStates::coins_to_pending(encoded_swap, coins, storeG);
     }
 

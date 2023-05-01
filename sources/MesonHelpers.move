@@ -5,6 +5,10 @@ module Meson::MesonHelpers {
     use sui::bcs;
     use sui::hash;
     use sui::ecdsa_k1;
+    use sui::transfer;
+    use sui::coin::{Self, Coin};
+    use sui::tx_context::{Self, TxContext};
+
 
     friend Meson::MesonStates;
     friend Meson::MesonSwap;
@@ -345,5 +349,35 @@ module Meson::MesonHelpers {
             signature
         );
         assert!(eth_addr == x"2eF8a51F8fF129DBb874A0efB021702F59C1b211", 1);
+    }
+
+    public fun merge_coins<CoinType>(
+        coin_list: vector<Coin<CoinType>>,
+        ctx: &mut TxContext,
+    ): Coin<CoinType> {
+        let singleton_coin: Coin<CoinType>;
+        if (vector::length(&coin_list) == 1) {
+            singleton_coin = vector::pop_back(&mut coin_list);
+        }
+        else {
+            singleton_coin = coin::zero<CoinType>(ctx);
+            while(vector::length(&coin_list) != 0) {
+                coin::join(&mut singleton_coin, vector::pop_back(&mut coin_list));
+            };
+        };
+        vector::destroy_empty(coin_list);
+        singleton_coin
+    }
+
+    public fun merge_coins_and_transfer<CoinType>(
+        coin_list: vector<Coin<CoinType>>,
+        recipient: address,
+        amount: u64,
+        ctx: &mut TxContext,
+    ) {
+        let singleton_coin = merge_coins(coin_list, ctx);
+        let giveout = coin::split<CoinType>(&mut singleton_coin, amount, ctx);
+        transfer::public_transfer(giveout, recipient);
+        transfer::public_transfer(singleton_coin, tx_context::sender(ctx));
     }
 }
