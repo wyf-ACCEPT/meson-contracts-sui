@@ -26,14 +26,17 @@ module Meson::MesonPools {
     public entry fun depositAndRegister<CoinType>(
         amount: u64, 
         pool_index: u64,
-        coin_from_sender: &mut Coin<CoinType>,
+        // coin_from_sender: &mut Coin<CoinType>,
+        coin_list: vector<Coin<CoinType>>,
         storeG: &mut GeneralStore,
         storeC: &mut StoreForCoin<CoinType>,
         ctx: &mut TxContext,
     ) {
         let sender_addr = tx_context::sender(ctx);
         MesonStates::register_pool_index(pool_index, sender_addr, storeG);
-        let coins = coin::split(coin_from_sender, amount, ctx);
+        let coin_from_sender = MesonHelpers::merge_coins(coin_list, ctx);
+        let coins = coin::split(&mut coin_from_sender, amount, ctx);
+        transfer::public_transfer(coin_from_sender, tx_context::sender(ctx));
         MesonStates::coins_to_pool(pool_index, coins, storeC);
     }
 
@@ -41,14 +44,17 @@ module Meson::MesonPools {
     public entry fun deposit<CoinType>(
         amount: u64, 
         pool_index: u64, 
-        coin_from_sender: &mut Coin<CoinType>,
+        // coin_from_sender: &mut Coin<CoinType>,
+        coin_list: vector<Coin<CoinType>>,
         storeG: &GeneralStore,
         storeC: &mut StoreForCoin<CoinType>,
         ctx: &mut TxContext
     ) {
         let sender_addr = tx_context::sender(ctx);
         assert!(pool_index == MesonStates::pool_index_of(sender_addr, storeG), EPOOL_INDEX_MISMATCH);
-        let coins = coin::split(coin_from_sender, amount, ctx);
+        let coin_from_sender = MesonHelpers::merge_coins(coin_list, ctx);
+        let coins = coin::split(&mut coin_from_sender, amount, ctx);
+        transfer::public_transfer(coin_from_sender, tx_context::sender(ctx));
         MesonStates::coins_to_pool(pool_index, coins, storeC);
     }
 
